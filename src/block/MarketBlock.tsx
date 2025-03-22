@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { fetchMarkets, fetchTickers } from '../services/UpbitApi';
+import Scrollbar from '../common/Scrollbar';
+import CoinTab from './CoinTab';
 
 function MarketBlock() {
   const [markets, setMarkets] = useState<{ market: string; korean_name: string }[]>([]);
@@ -81,7 +83,7 @@ function MarketBlock() {
   }, [markets]);
 
   return (
-    <div className="w-full h-full bg-[#FFFFFF] p-2">
+    <div className="w-full h-full bg-[#FFFFFF] p-2 flex flex-col">
       {loading ? (
         <div>
           <p>로딩 중...</p>
@@ -89,24 +91,19 @@ function MarketBlock() {
       ) : error ? (
         <div>{error}</div>
       ) : (
-        <div className="space-y-1">
+        <div className="flex flex-col h-full">
           <div className="flex justify-between items-center p-2 border-b font-bold text-sm">
             <div>코인명</div>
             <div>현재가</div>
             <div>변동률</div>
           </div>
-          {combineData
-            .sort((a, b) => (b.acc_trade_price_24h || 0) - (a.acc_trade_price_24h || 0))
-            .map((coin) => (
-              <div key={coin.market} className="flex justify-between items-center p-2 border-b text-sm hover:bg-gray-50">
-                <div className="w-1/2">
-                  <div className="font-medium">{coin.korean_name}</div>
-                  <div className="text-xs text-gray-500">{coin.market}</div>
-                </div>
-                <div className="w-1/4 text-right font-medium">{coin.trade_price ? coin.trade_price.toLocaleString() : '-'} 원</div>
-                <div className={`w-1/4 text-right ${coin.signed_change_rate >= 0 ? 'text-red-500' : 'text-blue-500'}`}>{coin.signed_change_rate ? (coin.signed_change_rate * 100).toFixed(2) : '-'}%</div>
-              </div>
-            ))}
+          <Scrollbar className="flex-1 overflow-y-auto" trackClassName="bg-gray-100">
+            {combineData
+              .sort((a, b) => (b.acc_trade_price_24h || 0) - (a.acc_trade_price_24h || 0))
+              .map((coin) => (
+                <CoinTab key={coin.market} coin={coin} />
+              ))}
+          </Scrollbar>
         </div>
       )}
     </div>
