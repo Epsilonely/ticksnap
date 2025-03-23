@@ -9,3 +9,34 @@ body {
 ::-webkit-scrollbar {
   display: none;
 }
+@keyframes price-up-pulse {
+  0%,
+  100% {
+    outline-color: rgba(241, 41, 90, 0);
+  }
+  50% {
+    outline-color: rgba(241, 41, 90, 1);
+  }
+}
+
+@keyframes price-down-pulse {
+  0%,
+  100% {
+    outline-color: rgba(63, 81, 181, 0);
+  }
+  50% {
+    outline-color: rgba(63, 81, 181, 1);
+  }
+}
+
+.price-up-animation {
+  animation: price-up-pulse 0.2s ease-in-out;
+  outline: 1px solid transparent;
+  outline-offset: -2px; /* outline이 요소 경계에 딱 맞도록 설정 */
+}
+
+.price-down-animation {
+  animation: price-down-pulse 0.2s ease-in-out;
+  outline: 1px solid transparent;
+  outline-offset: -2px;
+}
