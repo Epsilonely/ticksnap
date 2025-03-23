@@ -92,10 +92,11 @@ function MarketBlock() {
         <div>{error}</div>
       ) : (
         <div className="flex flex-col h-full">
-          <div className="flex justify-between items-center p-2 border-b font-bold text-sm">
-            <div>코인명</div>
-            <div>현재가</div>
-            <div>변동률</div>
+          <div className="flex justify-between h-fit items-center pb-0.5 px-1.5 border-b border-[#333333] text-[11px] text-[#333333] font-normal">
+            <div className="flex min-w-[150px] justify-start ps-[34px] bg-red-000">이름</div>
+            <div className="flex min-w-[110px] bg-red-000 justify-end pr-2">현재가</div>
+            <div className="flex min-w-[100px] justify-end bg-amber-000 pr-1">전일대비</div>
+            <div className="flex w-full justify-end">거래대금</div>
           </div>
           <Scrollbar className="flex-1 overflow-y-auto" trackClassName="bg-gray-100">
             {combineData
