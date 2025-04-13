@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { fetchMarkets, fetchTickers } from '../services/UpbitApi';
 import Scrollbar from '../common/Scrollbar';
-import CoinTab from './CoinTab';
 
 function MarketBlock() {
   const [markets, setMarkets] = useState<{ market: string; korean_name: string }[]>([]);
@@ -83,30 +82,8 @@ function MarketBlock() {
   }, [markets]);
 
   return (
-    <div className="w-full h-full bg-[#FFFFFF] p-2 flex flex-col">
-      {loading ? (
-        <div>
-          <p>로딩 중...</p>
-        </div>
-      ) : error ? (
-        <div>{error}</div>
-      ) : (
-        <div className="flex flex-col h-full">
-          <div className="flex justify-between h-fit items-center pb-0.5 px-1.5 border-b border-[#333333] text-[11px] text-[#333333] font-normal">
-            <div className="flex min-w-[150px] justify-start ps-[34px] bg-red-000">이름</div>
-            <div className="flex min-w-[110px] bg-red-000 justify-end pr-2">현재가</div>
-            <div className="flex min-w-[100px] justify-end bg-amber-000 pr-1">전일대비</div>
-            <div className="flex w-full justify-end">거래대금</div>
-          </div>
-          <Scrollbar className="flex-1 overflow-y-auto" trackClassName="bg-gray-100">
-            {combineData
-              .sort((a, b) => (b.acc_trade_price_24h || 0) - (a.acc_trade_price_24h || 0))
-              .map((coin) => (
-                <CoinTab key={coin.market} coin={coin} />
-              ))}
-          </Scrollbar>
-        </div>
-      )}
+    <div>
+      
     </div>
   );
 }
