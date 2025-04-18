@@ -30,13 +30,13 @@ body {
 }
 
 .price-up-animation {
-  animation: price-up-pulse 0.2s ease-in-out;
+  animation: price-up-pulse 0.25s ease-in-out;
   outline: 1px solid transparent;
   outline-offset: -2px; /* outline이 요소 경계에 딱 맞도록 설정 */
 }
 
 .price-down-animation {
-  animation: price-down-pulse 0.2s ease-in-out;
+  animation: price-down-pulse 0.25s ease-in-out;
   outline: 1px solid transparent;
   outline-offset: -2px;
 }
