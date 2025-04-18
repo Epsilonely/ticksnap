@@ -1,15 +1,42 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 body {
   margin: 0;
-  font-family: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: 'Pretendard Variable';
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+::-webkit-scrollbar {
+  display: none;
+}
+@keyframes price-up-pulse {
+  0%,
+  100% {
+    outline-color: rgba(241, 41, 90, 0);
+  }
+  50% {
+    outline-color: rgba(241, 41, 90, 1);
+  }
+}
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+@keyframes price-down-pulse {
+  0%,
+  100% {
+    outline-color: rgba(63, 81, 181, 0);
+  }
+  50% {
+    outline-color: rgba(63, 81, 181, 1);
+  }
+}
+
+.price-up-animation {
+  animation: price-up-pulse 0.25s ease-in-out;
+  outline: 1px solid transparent;
+  outline-offset: -2px; /* outline이 요소 경계에 딱 맞도록 설정 */
+}
+
+.price-down-animation {
+  animation: price-down-pulse 0.25s ease-in-out;
+  outline: 1px solid transparent;
+  outline-offset: -2px;
 }
