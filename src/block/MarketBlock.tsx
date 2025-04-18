@@ -68,7 +68,7 @@ function MarketBlock() {
             const animationClass = currentPrice > prevPrice ? 'price-up-animation' : 'price-down-animation';
 
             // 콘솔에 가격 변화 로깅 (디버깅용)
-            console.log(`${market}: ${prevPrice} -> ${currentPrice}, 차이: ${currentPrice - prevPrice}, ${animationClass}`);
+            // console.log(`${market}: ${prevPrice} -> ${currentPrice}, 차이: ${currentPrice - prevPrice}, ${animationClass}`);
 
             // 애니메이션 클래스 설정
             newAnimatingItems[market] = animationClass;
@@ -173,14 +173,14 @@ function MarketBlock() {
   return (
     <div className="h-full overflow-hidden bg-[#333333] text-white">
       {/* 카테고리 */}
-      <div className="bg-[#444444] flex px-3 py-0.5 text-[10.8px] gap-[24px] text-gray-300 border-b border-gray-600">
+      <div className="bg-[#444444] flex px-3 py-0.5 text-[10.8px] gap-[24px] text-[#CCCCCC] border-b border-[#5C5C5C]">
         <div className="w-[200px] min-w-[200px] pl-[46px]">이름</div>
         <div className="w-[126px] min-w-[126px] text-right">현재가</div>
         <div className="w-[122px] min-w-[122px] text-right px-1">전일대비</div>
         <div className="w-[80px] min-w-[80px] text-right">거래대금</div>
       </div>
 
-      <div className="h-[calc(100%-4rem)] text-[16px]">
+      <Scrollbar maxHeight="350px" className="h-[calc(100%-4rem)] text-[16px]">
         {combineData.map((item) => {
           // 가격 변동률 계산
           const changeRate = item.change === 'RISE' ? item.change_rate * 100 : item.change === 'FALL' ? -item.change_rate * 100 : 0;
@@ -245,7 +245,7 @@ function MarketBlock() {
             </div>
           );
         })}
-      </div>
+      </Scrollbar>
     </div>
   );
 }

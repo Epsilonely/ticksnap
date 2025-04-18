@@ -26,7 +26,8 @@ const Scrollbar: React.FC<ScrollbarProps> = ({
   const [scrollInfo, setScrollInfo] = useState({ scrollTop: 0, scrollHeight: 0, clientHeight: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [startY, setStartY] = useState(0);
-  const [showScrollbar, setShowScrollbar] = useState(false);
+  const [showScrollbar, setShowScrollbar] = useState(false); // 스크롤이 필요한지 여부
+  const [isHovering, setIsHovering] = useState(false); // 마우스 오버 상태
 
   // 스크롤 정보 업데이트 및 스크롤바 표시 여부 결정
   const handleScroll = () => {
@@ -104,12 +105,22 @@ const Scrollbar: React.FC<ScrollbarProps> = ({
   // 스크롤바 썸 위치 계산
   const thumbTop = scrollInfo.scrollHeight > scrollInfo.clientHeight ? (scrollInfo.scrollTop / (scrollInfo.scrollHeight - scrollInfo.clientHeight)) * (scrollInfo.clientHeight - thumbHeight) : 0;
 
+  // 마우스 오버 핸들러
+  const handleMouseEnter = () => {
+    setIsHovering(true);
+  };
+
+  // 마우스 아웃 핸들러
+  const handleMouseLeave = () => {
+    setIsHovering(false);
+  };
+
   return (
-    <div className={`relative ${className}`} style={{ ...style, maxHeight }}>
+    <div className={`relative ${className}`} style={{ ...style, maxHeight }} onMouseEnter={handleMouseEnter} onMouseLeave={handleMouseLeave}>
       {/* 실제 스크롤 컨테이너 */}
       <div
         ref={scrollContainerRef}
-        className="overflow-y-auto h-full w-full pr-2"
+        className="overflow-y-auto h-full w-full"
         style={{
           msOverflowStyle: 'none',
           scrollbarWidth: 'none',
@@ -121,14 +132,26 @@ const Scrollbar: React.FC<ScrollbarProps> = ({
 
       {/* 스크롤이 필요할 때만 커스텀 스크롤바 표시 */}
       {showScrollbar && (
-        <div className={`absolute right-0 top-0 w-2 h-full rounded-full bg-[#CCCCCC] ${trackClassName}`} style={{ opacity: 0.5, ...trackStyle }}>
+        <div
+          className={`absolute right-0 top-0 w-2 h-full rounded-full ${trackClassName}`}
+          style={{
+            backgroundColor: 'rgba(0, 0, 0, 0.1)',
+            pointerEvents: 'auto',
+            zIndex: 10,
+            opacity: isHovering ? 1 : 0,
+            transition: 'opacity 0.2s',
+            ...trackStyle,
+          }}
+        >
           {/* 커스텀 스크롤바 썸(thumb) */}
           <div
-            className={`absolute w-2 rounded-full bg-[#5C5C5C] hover:bg-[#333333] cursor-pointer ${thumbClassName}`}
+            className={`absolute w-2 rounded-full bg-[#5C5C5C] hover:bg-[#CCCCCC] cursor-pointer ${thumbClassName}`}
             style={{
               height: `${thumbHeight}px`,
               top: `${thumbTop}px`,
-              transition: 'background-color 0.2s',
+              transition: 'background-color 0.5s, opacity 0.5s',
+              opacity: isHovering ? 0.7 : 0,
+              zIndex: 10,
               ...thumbStyle,
             }}
             onMouseDown={handleThumbMouseDown}
