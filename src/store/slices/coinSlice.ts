@@ -1,13 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { fetchMarkets, fetchTickers } from '../../services/UpbitApi';
-
-interface CoinState {
-  markets: Array<{ market: string; korean_name: string }>;
-  tickers: any[];
-  selectedCoin: string | null;
-  loading: boolean;
-  error: string | null;
-}
+import { CoinState } from '../types';
 
 // 초기 상태
 const initialState: CoinState = {
@@ -16,6 +9,8 @@ const initialState: CoinState = {
   selectedCoin: null,
   loading: true,
   error: null,
+  webSocketData: null,
+  favoriteData: {},
 };
 
 // 비동기 액션
@@ -36,6 +31,15 @@ const coinSlice = createSlice({
     },
     updateTickers: (state, action: PayloadAction<any[]>) => {
       state.tickers = action.payload;
+    },
+    updateWebSocketData: (state, action: PayloadAction<any>) => {
+      state.webSocketData = action.payload;
+    },
+    updateFavoriteDate: (state, action: PayloadAction<any>) => {
+      const data = action.payload;
+      if (data && data.code) {
+        state.favoriteData[data.code] = data;
+      }
     },
   },
   extraReducers: (builder) => {
@@ -65,5 +69,5 @@ const coinSlice = createSlice({
   },
 });
 
-export const { selectCoin, updateTickers } = coinSlice.actions;
+export const { selectCoin, updateTickers, updateWebSocketData, updateFavoriteDate } = coinSlice.actions;
 export default coinSlice.reducer;
