@@ -11,7 +11,7 @@ function App() {
 
         {/* 상단 행: 오른쪽 블록 (5/12) */}
         <div className="col-span-5">
-          <Block type={BlockType.BLCOK_TY_ALARM_HISTORY} />
+          <Block type={BlockType.BLOCK_TY_ALARM_HISTORY} />
         </div>
 
         {/* 중간 행: 전체 너비 블록 */}

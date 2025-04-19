@@ -3,7 +3,8 @@ import MarketBlock from './MarketBlock';
 enum BlockType {
   BLOCK_TY_MARKET,
   BLOCK_TY_ALARM,
-  BLCOK_TY_ALARM_HISTORY,
+  BLOCK_TY_ALARM_HISTORY,
+  BLOCK_TY_COIN_DETAIL,
 }
 
 type BlockProps = {
@@ -16,6 +17,9 @@ function Block({ type }: BlockProps) {
   switch (type) {
     case BlockType.BLOCK_TY_MARKET:
       content = <MarketBlock />;
+      break;
+    case BlockType.BLOCK_TY_COIN_DETAIL:
+      content = <div />;
       break;
     default:
       content = <div>기본</div>;
