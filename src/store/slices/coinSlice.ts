@@ -35,7 +35,7 @@ const coinSlice = createSlice({
     updateWebSocketData: (state, action: PayloadAction<any>) => {
       state.webSocketData = action.payload;
     },
-    updateFavoriteDate: (state, action: PayloadAction<any>) => {
+    updateFavoriteData: (state, action: PayloadAction<any>) => {
       const data = action.payload;
       if (data && data.code) {
         state.favoriteData[data.code] = data;
@@ -69,5 +69,5 @@ const coinSlice = createSlice({
   },
 });
 
-export const { selectCoin, updateTickers, updateWebSocketData, updateFavoriteDate } = coinSlice.actions;
+export const { selectCoin, updateTickers, updateWebSocketData, updateFavoriteData } = coinSlice.actions;
 export default coinSlice.reducer;

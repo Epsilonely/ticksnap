@@ -1,4 +1,5 @@
 import MarketBlock from './MarketBlock';
+import CoinDetailBlock from './CoinDetailBlock';
 
 enum BlockType {
   BLOCK_TY_MARKET,
@@ -19,7 +20,7 @@ function Block({ type }: BlockProps) {
       content = <MarketBlock />;
       break;
     case BlockType.BLOCK_TY_COIN_DETAIL:
-      content = <div />;
+      content = <CoinDetailBlock />;
       break;
     default:
       content = <div>기본</div>;

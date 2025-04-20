@@ -36,7 +36,7 @@ function CoinDetailBlock() {
   const selectedCoinInfo = markets.find((market) => market.market === selectedCoin);
 
   return (
-    <div className="h-full bg-[#333333] text-white p-4 rounded-md">
+    <div className="h-full bg-[#c14545] text-white p-4 rounded-md">
       <h2 className="text-xl font-bold mb-4">
         {selectedCoinInfo?.korean_name} ({selectedCoin})
       </h2>
@@ -65,3 +65,5 @@ function CoinDetailBlock() {
     </div>
   );
 }
+
+export default CoinDetailBlock;
