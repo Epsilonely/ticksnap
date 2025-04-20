@@ -178,7 +178,17 @@ function MarketBlock() {
                 </div>
                 <div className="flex flex-col">
                   <div className="font-bold text-[#F5F5F5]">{item.korean_name}</div>
-                  <div className="font-extralight text-[#CCCCCC]">{item.market}</div>
+                  <div className="flex items-center">
+                    <div className="font-extralight text-[#CCCCCC]">{item.market}</div>
+                    {isFavorite && (
+                      <div
+                        className="ml-1.5 w-[10px] h-[10px] rounded-full"
+                        style={{
+                          background: 'linear-gradient(135deg, #59B3FB 0%, #47EF1D 70%, #FAD0C4 100%)',
+                        }}
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
 
