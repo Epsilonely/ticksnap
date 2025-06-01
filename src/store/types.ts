@@ -1,3 +1,5 @@
+import { CandleData } from '../services/UpbitApi';
+
 export interface CoinState {
   markets: Array<{ market: string; korean_name: string }>;
   tickers: any[];
@@ -6,6 +8,7 @@ export interface CoinState {
   error: string | null;
   webSocketData: any | null;
   favoriteData: Record<string, any>;
+  candleData: CandleData[];
 }
 
 export interface FavoriteState {

@@ -17,6 +17,20 @@ interface TickerData {
   acc_trade_price_24h: number; // 최근 24시간 동안의 총 거래대금
 }
 
+interface CandleData {
+  market: string;
+  candle_date_time_utc: string;
+  candle_date_time_kst: string;
+  opening_price: number; // 시가
+  high_price: number; // 고가
+  low_price: number; // 저가
+  trade_price: number; // 종가
+  timestamp: number;
+  candle_acc_trade_price: number; // 누적 거래대금
+  candle_acc_trade_volume: number; // 누적 거래량
+  unit: number; // 분봉 단위
+}
+
 export const fetchMarkets = async () => {
   try {
     const response = await axios.get('/api/upbit/v1/market/all');
@@ -37,3 +51,15 @@ export const fetchTickers = async (markets: string[]): Promise<TickerData[]> => 
     return [];
   }
 };
+
+export const fetchCandles = async (market: string, count: number = 30): Promise<CandleData[]> => {
+  try {
+    const response = await axios.get(`/api/upbit/v1/candles/minutes/1?market=${market}&count=${count}`);
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch candles:', error);
+    return [];
+  }
+};
+
+export type { CandleData };

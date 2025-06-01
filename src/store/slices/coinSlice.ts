@@ -1,5 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { fetchMarkets, fetchTickers } from '../../services/UpbitApi';
+import { fetchMarkets, fetchTickers, fetchCandles, CandleData } from '../../services/UpbitApi';
 import { CoinState } from '../types';
 
 // 초기 상태
@@ -11,6 +11,7 @@ const initialState: CoinState = {
   error: null,
   webSocketData: null,
   favoriteData: {},
+  candleData: [],
 };
 
 // 비동기 액션
@@ -20,6 +21,10 @@ export const fetchMarketsAsync = createAsyncThunk('coin/fetchMarkets', async () 
 
 export const fetchTickersAsync = createAsyncThunk('coin/fetchTickers', async (marketCodes: string[]) => {
   return await fetchTickers(marketCodes);
+});
+
+export const fetchCandlesAsync = createAsyncThunk('coin/fetchCandles', async (market: string) => {
+  return await fetchCandles(market, 30);
 });
 
 const coinSlice = createSlice({
@@ -40,6 +45,9 @@ const coinSlice = createSlice({
       if (data && data.code) {
         state.favoriteData[data.code] = data;
       }
+    },
+    updateCandleData: (state, action: PayloadAction<CandleData[]>) => {
+      state.candleData = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -65,9 +73,15 @@ const coinSlice = createSlice({
       })
       .addCase(fetchTickersAsync.rejected, (state, action) => {
         state.error = '현재가 정보를 가져오는 중 오류가 발생했습니다.';
+      })
+      .addCase(fetchCandlesAsync.fulfilled, (state, action) => {
+        state.candleData = action.payload;
+      })
+      .addCase(fetchCandlesAsync.rejected, (state, action) => {
+        state.error = '캔들 데이터를 가져오는 중 오류가 발생했습니다.';
       });
   },
 });
 
-export const { selectCoin, updateTickers, updateWebSocketData, updateFavoriteData } = coinSlice.actions;
+export const { selectCoin, updateTickers, updateWebSocketData, updateFavoriteData, updateCandleData } = coinSlice.actions;
 export default coinSlice.reducer;
