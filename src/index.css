@@ -15,7 +15,7 @@ body {
     outline-color: rgba(241, 41, 90, 0);
   }
   50% {
-    outline-color: rgba(241, 41, 90, 1);
+    outline-color: #f84f71;
   }
 }
 
@@ -25,7 +25,7 @@ body {
     outline-color: rgba(63, 81, 181, 0);
   }
   50% {
-    outline-color: rgba(63, 81, 181, 1);
+    outline-color: #60a5fa;
   }
 }
 
