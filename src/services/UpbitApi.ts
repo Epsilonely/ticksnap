@@ -52,9 +52,35 @@ export const fetchTickers = async (markets: string[]): Promise<TickerData[]> => 
   }
 };
 
-export const fetchCandles = async (market: string, count: number = 30): Promise<CandleData[]> => {
+export const fetchCandles = async (market: string, interval: string = '1', count: number = 30): Promise<CandleData[]> => {
   try {
-    const response = await axios.get(`/api/upbit/v1/candles/minutes/1?market=${market}&count=${count}`);
+    let endpoint = '';
+    let params = `market=${market}&count=${count}`;
+
+    // 시간대별로 적절한 엔드포인트 선택
+    switch (interval) {
+      case '1':
+      case '5':
+      case '15':
+        endpoint = `/api/upbit/v1/candles/minutes/${interval}`;
+        break;
+      case '1hour':
+        endpoint = '/api/upbit/v1/candles/minutes/60';
+        break;
+      case '4hour':
+        endpoint = '/api/upbit/v1/candles/minutes/240';
+        break;
+      case 'day':
+        endpoint = '/api/upbit/v1/candles/days';
+        break;
+      case 'week':
+        endpoint = '/api/upbit/v1/candles/weeks';
+        break;
+      default:
+        endpoint = '/api/upbit/v1/candles/minutes/1';
+    }
+
+    const response = await axios.get(`${endpoint}?${params}`);
     return response.data;
   } catch (error) {
     console.error('Failed to fetch candles:', error);

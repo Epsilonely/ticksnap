@@ -12,6 +12,7 @@ const initialState: CoinState = {
   webSocketData: null,
   favoriteData: {},
   candleData: [],
+  selectedInterval: '1',
 };
 
 // 비동기 액션
@@ -23,8 +24,8 @@ export const fetchTickersAsync = createAsyncThunk('coin/fetchTickers', async (ma
   return await fetchTickers(marketCodes);
 });
 
-export const fetchCandlesAsync = createAsyncThunk('coin/fetchCandles', async (market: string) => {
-  return await fetchCandles(market, 30);
+export const fetchCandlesAsync = createAsyncThunk('coin/fetchCandles', async ({ market, interval }: { market: string; interval: string }) => {
+  return await fetchCandles(market, interval, 30);
 });
 
 const coinSlice = createSlice({
@@ -33,6 +34,9 @@ const coinSlice = createSlice({
   reducers: {
     selectCoin: (state, action: PayloadAction<string>) => {
       state.selectedCoin = action.payload;
+    },
+    setSelectedInterval: (state, action: PayloadAction<string>) => {
+      state.selectedInterval = action.payload;
     },
     updateTickers: (state, action: PayloadAction<any[]>) => {
       state.tickers = action.payload;
@@ -83,5 +87,5 @@ const coinSlice = createSlice({
   },
 });
 
-export const { selectCoin, updateTickers, updateWebSocketData, updateFavoriteData, updateCandleData } = coinSlice.actions;
+export const { selectCoin, setSelectedInterval, updateTickers, updateWebSocketData, updateFavoriteData, updateCandleData } = coinSlice.actions;
 export default coinSlice.reducer;

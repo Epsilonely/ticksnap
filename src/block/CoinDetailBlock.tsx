@@ -2,7 +2,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useEffect } from 'react';
 import { RootState } from '../store';
 import { toggleFavorite } from '../store/slices/favoriteSlice';
-import { fetchCandlesAsync } from '../store/slices/coinSlice';
+import { fetchCandlesAsync, setSelectedInterval } from '../store/slices/coinSlice';
 import MiniChart from '../components/MiniChart';
 
 function CoinDetailBlock() {
@@ -11,28 +11,51 @@ function CoinDetailBlock() {
   const markets = useSelector((state: RootState) => state.coin.markets);
   const coinData = useSelector((state: RootState) => state.coin.webSocketData);
   const candleData = useSelector((state: RootState) => state.coin.candleData);
+  const selectedInterval = useSelector((state: RootState) => state.coin.selectedInterval);
   const favorites = useSelector((state: RootState) => state.favorite.favorites);
 
   // 현재 선택된 코인이 즐겨찾기에 있는지 확인
   const isFavorite = selectedCoin ? favorites.includes(selectedCoin) : false;
 
+  // 갱신 주기 설정 함수
+  const getUpdateInterval = (interval: string) => {
+    switch (interval) {
+      case '1':
+        return 60000; // 1분마다
+      case '5':
+        return 300000; // 5분마다
+      case '15':
+        return 900000; // 15분마다
+      case '1hour':
+        return 3600000; // 1시간마다
+      case '4hour':
+        return 14400000; // 4시간마다
+      case 'day':
+        return 3600000; // 1시간마다 (일봉은 자주 갱신 필요 없음)
+      case 'week':
+        return 86400000; // 1일마다 (주봉은 더 적게 갱신)
+      default:
+        return 60000;
+    }
+  };
+
   // 코인 선택 시 캔들 데이터 조회
   useEffect(() => {
     if (selectedCoin) {
-      dispatch(fetchCandlesAsync(selectedCoin) as any);
+      dispatch(fetchCandlesAsync({ market: selectedCoin, interval: selectedInterval }) as any);
     }
-  }, [selectedCoin, dispatch]);
+  }, [selectedCoin, selectedInterval, dispatch]);
 
-  // 1분마다 캔들 데이터 갱신
+  // 시간 간격에 따른 캔들 데이터 갱신
   useEffect(() => {
     if (!selectedCoin) return;
 
     const interval = setInterval(() => {
-      dispatch(fetchCandlesAsync(selectedCoin) as any);
-    }, 60000); // 1분마다 갱신
+      dispatch(fetchCandlesAsync({ market: selectedCoin, interval: selectedInterval }) as any);
+    }, getUpdateInterval(selectedInterval)); // 시간 간격에 따른 갱신
 
     return () => clearInterval(interval);
-  }, [selectedCoin, dispatch]);
+  }, [selectedCoin, selectedInterval, dispatch]);
 
   // 즐겨찾기 토글 핸들러
   const handleToggleFavorite = () => {
@@ -55,7 +78,7 @@ function CoinDetailBlock() {
   const isCorrectCoinData = coinData && coinData.code === selectedCoin;
 
   return (
-    <div className="h-full bg-[#F5F5F5] text-[#26262C] p-4 rounded-md">
+    <div className="h-full bg-[#F2F2F2] text-[#26262C] p-4 rounded-md">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-[20px] font-bold">
           {selectedCoinInfo?.korean_name} ({selectedCoin})
@@ -120,7 +143,17 @@ function CoinDetailBlock() {
             </div>
 
             {/* 미니 차트 추가 */}
-            <MiniChart candleData={candleData} />
+            <MiniChart
+              candleData={candleData}
+              prevClosingPrice={coinData.prev_closing_price || 0}
+              selectedInterval={selectedInterval}
+              onIntervalChange={(interval) => {
+                dispatch(setSelectedInterval(interval));
+                if (selectedCoin) {
+                  dispatch(fetchCandlesAsync({ market: selectedCoin, interval }) as any);
+                }
+              }}
+            />
 
             {/* 기존 거래량 정보 */}
             <h4 className="text-base mb-2 font-medium mt-4">거래량 정보</h4>

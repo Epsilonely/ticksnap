@@ -9,6 +9,7 @@ export interface CoinState {
   webSocketData: any | null;
   favoriteData: Record<string, any>;
   candleData: CandleData[];
+  selectedInterval: string;
 }
 
 export interface FavoriteState {
