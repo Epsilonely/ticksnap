@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { fetchMarkets, fetchTickers, fetchCandles, CandleData } from '../../services/UpbitApi';
-import { CoinState } from '../types';
+import { CoinState, IntervalType, TickData } from '../types';
 
 // 초기 상태
 const initialState: CoinState = {
@@ -13,6 +13,7 @@ const initialState: CoinState = {
   favoriteData: {},
   candleData: [],
   selectedInterval: '1',
+  tickData: [],
 };
 
 // 비동기 액션
@@ -24,7 +25,7 @@ export const fetchTickersAsync = createAsyncThunk('coin/fetchTickers', async (ma
   return await fetchTickers(marketCodes);
 });
 
-export const fetchCandlesAsync = createAsyncThunk('coin/fetchCandles', async ({ market, interval }: { market: string; interval: string }) => {
+export const fetchCandlesAsync = createAsyncThunk('coin/fetchCandles', async ({ market, interval }: { market: string; interval: IntervalType }) => {
   return await fetchCandles(market, interval, 30);
 });
 
@@ -35,7 +36,17 @@ const coinSlice = createSlice({
     selectCoin: (state, action: PayloadAction<string>) => {
       state.selectedCoin = action.payload;
     },
-    setSelectedInterval: (state, action: PayloadAction<string>) => {
+    addTickData: (state, action: PayloadAction<TickData>) => {
+      state.tickData.push(action.payload);
+      // 최대 30개 유지
+      if (state.tickData.length > 30) {
+        state.tickData.shift();
+      }
+    },
+    clearTickData: (state) => {
+      state.tickData = [];
+    },
+    setSelectedInterval: (state, action: PayloadAction<IntervalType>) => {
       state.selectedInterval = action.payload;
     },
     updateTickers: (state, action: PayloadAction<any[]>) => {
@@ -87,5 +98,5 @@ const coinSlice = createSlice({
   },
 });
 
-export const { selectCoin, setSelectedInterval, updateTickers, updateWebSocketData, updateFavoriteData, updateCandleData } = coinSlice.actions;
+export const { selectCoin, setSelectedInterval, updateTickers, updateWebSocketData, updateFavoriteData, updateCandleData, addTickData, clearTickData } = coinSlice.actions;
 export default coinSlice.reducer;

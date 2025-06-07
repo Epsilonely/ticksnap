@@ -1,5 +1,11 @@
 import { CandleData } from '../services/UpbitApi';
 
+export interface TickData {
+  timestamp: number;
+  price: number;
+  change: string;
+}
+
 export interface CoinState {
   markets: Array<{ market: string; korean_name: string }>;
   tickers: any[];
@@ -9,7 +15,8 @@ export interface CoinState {
   webSocketData: any | null;
   favoriteData: Record<string, any>;
   candleData: CandleData[];
-  selectedInterval: string;
+  selectedInterval: IntervalType;
+  tickData: TickData[];
 }
 
 export interface FavoriteState {
@@ -20,3 +27,5 @@ export interface RootState {
   coin: CoinState;
   favorite: FavoriteState;
 }
+
+export type IntervalType = 'tick' | '1' | '5' | '15' | '1hour' | '4hour' | 'day' | 'week';

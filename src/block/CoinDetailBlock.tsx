@@ -2,7 +2,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { useEffect } from 'react';
 import { RootState } from '../store';
 import { toggleFavorite } from '../store/slices/favoriteSlice';
-import { fetchCandlesAsync, setSelectedInterval } from '../store/slices/coinSlice';
+import { fetchCandlesAsync, setSelectedInterval, addTickData, clearTickData } from '../store/slices/coinSlice';
 import MiniChart from '../components/MiniChart';
 
 function CoinDetailBlock() {
@@ -12,6 +12,7 @@ function CoinDetailBlock() {
   const coinData = useSelector((state: RootState) => state.coin.webSocketData);
   const candleData = useSelector((state: RootState) => state.coin.candleData);
   const selectedInterval = useSelector((state: RootState) => state.coin.selectedInterval);
+  const tickData = useSelector((state: RootState) => state.coin.tickData);
   const favorites = useSelector((state: RootState) => state.favorite.favorites);
 
   // 현재 선택된 코인이 즐겨찾기에 있는지 확인
@@ -46,9 +47,28 @@ function CoinDetailBlock() {
     }
   }, [selectedCoin, selectedInterval, dispatch]);
 
+  // 웹소켓 데이터로 틱 데이터 업데이트
+  useEffect(() => {
+    if (coinData && selectedCoin && coinData.code === selectedCoin && selectedInterval === 'tick') {
+      const newTickData = {
+        timestamp: Date.now(),
+        price: coinData.trade_price,
+        change: coinData.change,
+      };
+      dispatch(addTickData(newTickData));
+    }
+  }, [coinData, selectedCoin, selectedInterval, dispatch]);
+
+  // 코인 변경 시 틱 데이터 초기화
+  useEffect(() => {
+    if (selectedCoin) {
+      dispatch(clearTickData());
+    }
+  }, [selectedCoin, dispatch]);
+
   // 시간 간격에 따른 캔들 데이터 갱신
   useEffect(() => {
-    if (!selectedCoin) return;
+    if (!selectedCoin || selectedInterval === 'tick') return;
 
     const interval = setInterval(() => {
       dispatch(fetchCandlesAsync({ market: selectedCoin, interval: selectedInterval }) as any);
@@ -99,7 +119,7 @@ function CoinDetailBlock() {
             <p>전일 종가: {coinData.prev_closing_price?.toLocaleString()} KRW</p>
           </div>
 
-          <div className="bg-[#FFFFFF] p-3 rounded-md">
+          <div className="bg-[#FFFFFF] p-3 rounded-md border-1 border-[#CCCCCC]">
             <h3 className="text-lg mb-3">거래 분석</h3>
 
             {/* 매수/매도 비율 바 */}
@@ -145,6 +165,7 @@ function CoinDetailBlock() {
             {/* 미니 차트 추가 */}
             <MiniChart
               candleData={candleData}
+              tickData={tickData}
               prevClosingPrice={coinData.prev_closing_price || 0}
               selectedInterval={selectedInterval}
               onIntervalChange={(interval) => {

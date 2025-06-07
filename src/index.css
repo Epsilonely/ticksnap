@@ -3,6 +3,8 @@
 body {
   margin: 0;
   font-family: 'Pretendard Variable';
+  line-height: 1.4;
+  letter-spacing: -0.025em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

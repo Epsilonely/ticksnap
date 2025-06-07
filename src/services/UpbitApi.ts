@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { IntervalType } from '../store/types';
 
 interface MarketData {
   market: string;
@@ -52,13 +53,16 @@ export const fetchTickers = async (markets: string[]): Promise<TickerData[]> => 
   }
 };
 
-export const fetchCandles = async (market: string, interval: string = '1', count: number = 30): Promise<CandleData[]> => {
+export const fetchCandles = async (market: string, interval: IntervalType = '1', count: number = 30): Promise<CandleData[]> => {
   try {
     let endpoint = '';
     let params = `market=${market}&count=${count}`;
 
     // 시간대별로 적절한 엔드포인트 선택
     switch (interval) {
+      case 'tick':
+        // 틱 데이터는 캔들 데이터가 아니므로 빈 배열 반환
+        return [];
       case '1':
       case '5':
       case '15':
