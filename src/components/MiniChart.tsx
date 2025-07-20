@@ -130,12 +130,6 @@ const MiniChart: React.FC<MiniChartProps> = ({ candleData, tickData, prevClosing
             </div>
           </div>
         </div>
-
-        {/* 시간 라벨 */}
-        <div className="flex justify-between mt-1 text-xs text-gray-500">
-          <span>{tickData.length > 0 ? new Date(tickData[0].timestamp).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : ''}</span>
-          <span>{tickData.length > 0 ? new Date(tickData[tickData.length - 1].timestamp).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : ''}</span>
-        </div>
       </div>
     );
   }
@@ -256,25 +250,55 @@ const MiniChart: React.FC<MiniChartProps> = ({ candleData, tickData, prevClosing
       {/* 거래량 막대 그래프 */}
       <div>
         <div className="text-xs text-[#4C4C57] mb-1 font-medium">거래량</div>
-        <div className="flex items-end justify-between h-10 bg-[#F5F5F5] rounded px-1">
-          {sortedData.map((data, index) => (
-            <div
-              key={index}
-              className="bg-[#4C4C57] transition-all duration-300 flex-1 mx-0.5"
-              style={{
-                height: `${getVolumeHeight(data.candle_acc_trade_volume)}px`,
-                opacity: 0.25 + (data.candle_acc_trade_volume / maxVolume) * 0.75,
-              }}
-              title={`${data.candle_acc_trade_volume.toFixed(2)}`}
-            />
-          ))}
+        {/* <div className="flex items-end gap-1 h-10 bg-[#F5F5F5] rounded px-1.5">
+          {sortedData.map((data, index) => {
+            const totalBars = sortedData.length;
+            const barSpacing = 100 / totalBars;
+            const barWidth = barSpacing * 4;
+            return (
+              <div
+                key={index}
+                className="bg-[#4C4C57] transition-all duration-300"
+                style={{
+                  width: `${barWidth}px`,
+                  height: `${getVolumeHeight(data.candle_acc_trade_volume)}px`,
+                  opacity: 0.35 + (data.candle_acc_trade_volume / maxVolume) * 0.65,
+                }}
+                title={`${data.candle_acc_trade_volume.toFixed(2)}`}
+              />
+            );
+          })}
+        </div> */}
+        <div className="relative h-10 bg-[#F5F5F5] rounded px-1">
+          <svg width="100%" height="40" className="absolute inset-0" viewBox="0 0 102 40" preserveAspectRatio="none">
+            {sortedData.map((data, index) => {
+              const totalBars = sortedData.length;
+              const barSpacing = 100 / totalBars;
+              const x = (index + 0.4) * barSpacing;
+              const barWidth = barSpacing * 0.8;
+              const barHeight = getVolumeHeight(data.candle_acc_trade_volume);
+              const y = 40 - barHeight;
+              return <rect key={index} x={x} y={y} width={barWidth} height={barHeight} fill="#4C4C57" opacity={0.25 + (data.candle_acc_trade_volume / maxVolume) * 0.75} className="transition-all duration-300" />;
+            })}
+          </svg>
+          {/* <svg width="100%" height="40" className="absolute inset-0" viewBox="0 0 102 40" preserveAspectRatio="none">
+            {sortedData.map((data, index) => {
+              const totalBars = sortedData.length;
+              const barSpacing = 100 / totalBars;
+              const x = (index + 0.4) * barSpacing;
+              const barWidth = barSpacing * 0.8;
+              const barHeight = 40;
+              const y = 0;
+              return <rect key={index} x={x} y={y} width={barWidth} height={barHeight} fill="#F84F71" opacity={0.25 + (data.candle_acc_trade_volume / maxVolume) * 0.75} className="transition-all duration-300" />;
+            })}
+          </svg> */}
         </div>
       </div>
 
       {/* 시간 라벨 */}
       <div className="flex justify-between mt-1 text-xs font-light text-[#4C4C57]">
-        <span>{new Date(sortedData[0]?.candle_date_time_kst).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
-        <span>{new Date(sortedData[sortedData.length - 1]?.candle_date_time_kst).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
+        <span>{new Date(sortedData[0]?.candle_date_time_kst).toLocaleTimeString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+        <span>{new Date(sortedData[sortedData.length - 1]?.candle_date_time_kst).toLocaleTimeString('ko-KR', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
       </div>
     </div>
   );

@@ -26,7 +26,7 @@ export const fetchTickersAsync = createAsyncThunk('coin/fetchTickers', async (ma
 });
 
 export const fetchCandlesAsync = createAsyncThunk('coin/fetchCandles', async ({ market, interval }: { market: string; interval: IntervalType }) => {
-  return await fetchCandles(market, interval, 30);
+  return await fetchCandles(market, interval, 36);
 });
 
 const coinSlice = createSlice({

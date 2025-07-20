@@ -4,6 +4,7 @@ export interface TickData {
   timestamp: number;
   price: number;
   change: string;
+  volume: number;
 }
 
 export interface CoinState {

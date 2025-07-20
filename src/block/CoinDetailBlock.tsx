@@ -54,6 +54,7 @@ function CoinDetailBlock() {
         timestamp: Date.now(),
         price: coinData.trade_price,
         change: coinData.change,
+        volume: coinData.trade_volume,
       };
       dispatch(addTickData(newTickData));
     }
