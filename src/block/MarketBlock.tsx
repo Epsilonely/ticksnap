@@ -163,7 +163,7 @@ function MarketBlock() {
 
             return (
               // 코인 리스트
-              <div key={item.market} className="flex px-4 py-1 gap-2 border-b border-[rgba(198,198,198,0.7)] hover:bg-[#F2F2F2] cursor-pointer" onClick={() => handleSelectCoin(item.market)}>
+              <div key={item.market} className="flex px-4 py-1 gap-2 border-b border-[rgba(225,225,225,0.4)] hover:bg-[#F2F2F2] cursor-pointer" onClick={() => handleSelectCoin(item.market)}>
                 <div className="flex items-center min-w-[154px]">
                   <div className="flex flex-col gap-1.5">
                     <div className="flex items-center gap-[6px]">
