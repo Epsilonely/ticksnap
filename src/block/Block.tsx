@@ -25,7 +25,7 @@ function Block({ type }: BlockProps) {
     default:
       content = <div>기본</div>;
   }
-  return <div className="h-full overflow-hidden rounded-md">{content}</div>;
+  return <div className="h-full overflow-hidden">{content}</div>;
 }
 
 export { BlockType };

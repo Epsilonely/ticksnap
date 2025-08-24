@@ -142,7 +142,7 @@ function MarketBlock() {
         <div className="min-w-[82px] text-right">거래대금</div>
       </div>
 
-      <Scrollbar className="h-[calc(100%-4rem)] text-[14px]">
+      <Scrollbar className="h-[calc(100%-1rem)] text-[14px]">
         {combineData
           .sort((a, b) => b.acc_trade_price_24h - a.acc_trade_price_24h)
           .map((item) => {
