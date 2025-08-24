@@ -69,8 +69,8 @@ const MiniChart: React.FC<MiniChartProps> = ({ candleData, tickData, prevClosing
               </button>
             </div>
           </div>
-          <div className="relative h-15 bg-[#F5F5F5] rounded px-1">
-            <svg width="100%" height="60" className="absolute inset-0" viewBox="0 0 102 40" preserveAspectRatio="none">
+          <div className="relative h-35 bg-[#F5F5F5] rounded px-1">
+            <svg width="100%" height="150" className="absolute inset-0" viewBox="0 0 102 40" preserveAspectRatio="none">
               {/* 틱 라인 */}
               {tickData.slice(0, -1).map((data, index) => {
                 const totalTicks = tickData.length;
@@ -119,7 +119,7 @@ const MiniChart: React.FC<MiniChartProps> = ({ candleData, tickData, prevClosing
                   }
                 };
 
-                return <rect key={index} x={x} y={y} width={tickWidth} height={tickHeight} fill={getColor(data.change)} className="transition-all duration-100" />;
+                return <rect key={index} x={x} y={y} width={tickWidth} height={tickHeight} fill={getColor(data.change)} className="transition-all duration-70" />;
               })}
             </svg>
 
@@ -206,8 +206,8 @@ const MiniChart: React.FC<MiniChartProps> = ({ candleData, tickData, prevClosing
             </button>
           </div>
         </div>
-        <div className="relative h-15 bg-[#F5F5F5] rounded px-1">
-          <svg width="100%" height="60" className="absolute inset-0" viewBox="0 0 102 40" preserveAspectRatio="none">
+        <div className="relative h-35 bg-[#F5F5F5] rounded px-1">
+          <svg width="100%" height="150" className="absolute inset-0" viewBox="0 0 102 40" preserveAspectRatio="none">
             {/* 가격 라인 */}
             {sortedData.slice(0, -1).map((data, index) => {
               const totalBars = sortedData.length;
@@ -231,9 +231,9 @@ const MiniChart: React.FC<MiniChartProps> = ({ candleData, tickData, prevClosing
               const totalBars = sortedData.length;
               const barSpacing = 100 / totalBars;
               const x = (index + 0.4) * barSpacing;
-              const y = getY(data.trade_price) - 1;
+              const y = getY(data.trade_price)-0.4;
               const barWidth = barSpacing * 0.8;
-              const barHeight = 2;
+              const barHeight = 0.8;
               const isRising = data.trade_price >= prevClosingPrice;
               return <rect key={index} x={x} y={y} width={barWidth} height={barHeight} fill={`${isRising ? '#F84F71' : '#3578FF'}`} className="transition-all duration-300" />;
             })}

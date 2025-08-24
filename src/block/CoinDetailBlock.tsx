@@ -99,26 +99,36 @@ function CoinDetailBlock() {
   const isCorrectCoinData = coinData && coinData.code === selectedCoin;
 
   return (
-    <div className="h-full bg-[#F2F2F2] text-[#26262C] p-4 rounded-md">
+    <div className="h-full bg-[#F2F2F2] text-[#26262C] p-4">
       <div className="flex justify-between items-center mb-4">
+        <div className='flex items-center gap-2'>
         <h2 className="text-[20px] font-bold">
-          {selectedCoinInfo?.korean_name} ({selectedCoin})
+          {selectedCoinInfo?.korean_name}
         </h2>
+        <div className='text-[14px]'>{selectedCoin}</div>
+        </div>
         <button onClick={handleToggleFavorite} className={`px-3 py-1.5 rounded-md text-sm font-medium ${isFavorite ? 'bg-[#4C4C57] text-[#FFFFFF]  hover:bg-[#26262C]' : 'bg-[#5FC26A] text-[#FFFFFF] hover:bg-[#4CAE57]'}`}>
           {isFavorite ? '관심 해제' : '관심 등록'}
         </button>
       </div>
 
+      <div className=' flex gap-2 text-[32px] font-black text-[#4C4C57]'>
+        <div>
+          {coinData.trade_price?.toLocaleString()}
+        </div>
+        <div>
+          {coinData.change}
+        </div>
+        <div>
+          {Math.abs(coinData.change_rate*100).toFixed(2)}"
+        </div>
+        <div>
+          {coinData.change_price?.toLocaleString()}
+        </div>
+      </div>
+
       {isCorrectCoinData ? (
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-[#FFFFFF] p-3 rounded-md">
-            <h3 className="text-lg mb-2">가격 정보</h3>
-            <p>현재가: {coinData.trade_price?.toLocaleString()} KRW</p>
-            <p>시가: {coinData.opening_price?.toLocaleString()} KRW</p>
-            <p>고가: {coinData.high_price?.toLocaleString()} KRW</p>
-            <p>저가: {coinData.low_price?.toLocaleString()} KRW</p>
-            <p>전일 종가: {coinData.prev_closing_price?.toLocaleString()} KRW</p>
-          </div>
 
           <div className="bg-[#FFFFFF] p-3 rounded-md border-1 border-[#CCCCCC]">
             <h3 className="text-lg mb-3">거래 분석</h3>
@@ -188,14 +198,14 @@ function CoinDetailBlock() {
             </div>
           </div>
 
-          <div className="bg-[#FFFFFF] p-3 rounded-md col-span-2">
-            <h3 className="text-lg mb-2">추가 정보</h3>
-            <p>변동률: {coinData.signed_change_rate ? (coinData.signed_change_rate * 100).toFixed(2) + '%' : '-'}</p>
-            <p>변동금액: {coinData.signed_change_price?.toLocaleString()} KRW</p>
-            <p>
-              거래 시각: {coinData.trade_date} {coinData.trade_time}
-            </p>
-            <p>마켓 상태: {coinData.market_state}</p>
+          {/*주문창*/}
+          <div className="bg-[#FFFFFF] p-3 rounded-md border-1 border-[#CCCCCC]">
+            <h3 className="text-lg mb-2">가격 정보</h3>
+            <p>현재가: {coinData.trade_price?.toLocaleString()} KRW</p>
+            <p>시가: {coinData.opening_price?.toLocaleString()} KRW</p>
+            <p>고가: {coinData.high_price?.toLocaleString()} KRW</p>
+            <p>저가: {coinData.low_price?.toLocaleString()} KRW</p>
+            <p>전일 종가: {coinData.prev_closing_price?.toLocaleString()} KRW</p>
           </div>
         </div>
       ) : (
