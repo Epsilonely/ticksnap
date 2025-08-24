@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { IntervalType } from '../store/types';
 
 interface MarketData {
   market: string;
@@ -15,6 +16,20 @@ interface TickerData {
   signed_change_rate: number;
   acc_trade_price: number; // 누적 거래대금 (UTC 0시 기준)
   acc_trade_price_24h: number; // 최근 24시간 동안의 총 거래대금
+}
+
+interface CandleData {
+  market: string;
+  candle_date_time_utc: string;
+  candle_date_time_kst: string;
+  opening_price: number; // 시가
+  high_price: number; // 고가
+  low_price: number; // 저가
+  trade_price: number; // 종가
+  timestamp: number;
+  candle_acc_trade_price: number; // 누적 거래대금
+  candle_acc_trade_volume: number; // 누적 거래량
+  unit: number; // 분봉 단위
 }
 
 export const fetchMarkets = async () => {
@@ -37,3 +52,44 @@ export const fetchTickers = async (markets: string[]): Promise<TickerData[]> => 
     return [];
   }
 };
+
+export const fetchCandles = async (market: string, interval: IntervalType = '1', count: number = 30): Promise<CandleData[]> => {
+  try {
+    let endpoint = '';
+    let params = `market=${market}&count=${count}`;
+
+    // 시간대별로 적절한 엔드포인트 선택
+    switch (interval) {
+      case 'tick':
+        // 틱 데이터는 캔들 데이터가 아니므로 빈 배열 반환
+        return [];
+      case '1':
+      case '5':
+      case '15':
+        endpoint = `/api/upbit/v1/candles/minutes/${interval}`;
+        break;
+      case '1hour':
+        endpoint = '/api/upbit/v1/candles/minutes/60';
+        break;
+      case '4hour':
+        endpoint = '/api/upbit/v1/candles/minutes/240';
+        break;
+      case 'day':
+        endpoint = '/api/upbit/v1/candles/days';
+        break;
+      case 'week':
+        endpoint = '/api/upbit/v1/candles/weeks';
+        break;
+      default:
+        endpoint = '/api/upbit/v1/candles/minutes/1';
+    }
+
+    const response = await axios.get(`${endpoint}?${params}`);
+    return response.data;
+  } catch (error) {
+    console.error('Failed to fetch candles:', error);
+    return [];
+  }
+};
+
+export type { CandleData };

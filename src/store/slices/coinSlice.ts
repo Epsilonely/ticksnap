@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
-import { fetchMarkets, fetchTickers } from '../../services/UpbitApi';
-import { CoinState } from '../types';
+import { fetchMarkets, fetchTickers, fetchCandles, CandleData } from '../../services/UpbitApi';
+import { CoinState, IntervalType, TickData } from '../types';
 
 // 초기 상태
 const initialState: CoinState = {
@@ -11,6 +11,9 @@ const initialState: CoinState = {
   error: null,
   webSocketData: null,
   favoriteData: {},
+  candleData: [],
+  selectedInterval: '1',
+  tickData: [],
 };
 
 // 비동기 액션
@@ -22,12 +25,29 @@ export const fetchTickersAsync = createAsyncThunk('coin/fetchTickers', async (ma
   return await fetchTickers(marketCodes);
 });
 
+export const fetchCandlesAsync = createAsyncThunk('coin/fetchCandles', async ({ market, interval }: { market: string; interval: IntervalType }) => {
+  return await fetchCandles(market, interval, 36);
+});
+
 const coinSlice = createSlice({
   name: 'coin',
   initialState,
   reducers: {
     selectCoin: (state, action: PayloadAction<string>) => {
       state.selectedCoin = action.payload;
+    },
+    addTickData: (state, action: PayloadAction<TickData>) => {
+      state.tickData.push(action.payload);
+      // 최대 30개 유지
+      if (state.tickData.length > 30) {
+        state.tickData.shift();
+      }
+    },
+    clearTickData: (state) => {
+      state.tickData = [];
+    },
+    setSelectedInterval: (state, action: PayloadAction<IntervalType>) => {
+      state.selectedInterval = action.payload;
     },
     updateTickers: (state, action: PayloadAction<any[]>) => {
       state.tickers = action.payload;
@@ -40,6 +60,9 @@ const coinSlice = createSlice({
       if (data && data.code) {
         state.favoriteData[data.code] = data;
       }
+    },
+    updateCandleData: (state, action: PayloadAction<CandleData[]>) => {
+      state.candleData = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -65,9 +88,15 @@ const coinSlice = createSlice({
       })
       .addCase(fetchTickersAsync.rejected, (state, action) => {
         state.error = '현재가 정보를 가져오는 중 오류가 발생했습니다.';
+      })
+      .addCase(fetchCandlesAsync.fulfilled, (state, action) => {
+        state.candleData = action.payload;
+      })
+      .addCase(fetchCandlesAsync.rejected, (state, action) => {
+        state.error = '캔들 데이터를 가져오는 중 오류가 발생했습니다.';
       });
   },
 });
 
-export const { selectCoin, updateTickers, updateWebSocketData, updateFavoriteData } = coinSlice.actions;
+export const { selectCoin, setSelectedInterval, updateTickers, updateWebSocketData, updateFavoriteData, updateCandleData, addTickData, clearTickData } = coinSlice.actions;
 export default coinSlice.reducer;

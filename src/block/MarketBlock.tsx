@@ -133,93 +133,94 @@ function MarketBlock() {
   };
 
   return (
-    <div className="h-full overflow-hidden bg-[#333333] text-white">
+    <div className="h-full overflow-hidden bg-[#ffffff]">
       {/* 카테고리 */}
-      <div className="bg-[#444444] flex px-3 py-0.5 text-[10.8px] gap-[24px] text-[#CCCCCC] border-b border-[#5C5C5C]">
-        <div className="w-[200px] min-w-[200px] pl-[46px]">이름</div>
-        <div className="w-[126px] min-w-[126px] text-right">현재가</div>
-        <div className="w-[122px] min-w-[122px] text-right px-1">전일대비</div>
-        <div className="w-[80px] min-w-[80px] text-right">거래대금</div>
+      <div className="bg-[#444444] flex px-4 py-0.5 text-[11px] gap-2 text-[#ffffff] font-light border-b border-[#5C5C5C]">
+        <div className="min-w-[154px]">이름</div>
+        <div className="min-w-[94px] text-right">현재가 (KRW)</div>
+        <div className="min-w-[100px] text-right px-1">전일대비</div>
+        <div className="min-w-[82px] text-right">거래대금</div>
       </div>
 
-      <Scrollbar maxHeight="350px" className="h-[calc(100%-4rem)] text-[16px]">
-        {combineData.map((item) => {
-          // 가격 변동률 계산
-          const changeRate = item.change === 'RISE' ? item.change_rate * 100 : item.change === 'FALL' ? -item.change_rate * 100 : 0;
+      <Scrollbar className="h-[calc(100%-4rem)] text-[14px]">
+        {combineData
+          .sort((a, b) => b.acc_trade_price_24h - a.acc_trade_price_24h)
+          .map((item) => {
+            // 가격 변동률 계산
+            const changeRate = item.change === 'RISE' ? item.change_rate * 100 : item.change === 'FALL' ? -item.change_rate * 100 : 0;
 
-          // 가격 변동에 따른 색상 설정
-          const priceColor = item.change === 'RISE' ? 'text-[#F84F71]' : item.change === 'FALL' ? 'text-[#60A5FA]' : 'text-gray-300';
+            // 가격 변동에 따른 색상 설정
+            const priceColor = item.change === 'RISE' ? 'text-[#F84F71]' : item.change === 'FALL' ? 'text-[#3578FF]' : 'text-gray-300';
 
-          // 거래대금 가져오기 (원 단위)
-          const tradeVolume = getTradeVolume(item.acc_trade_price_24h);
+            // 거래대금 가져오기 (원 단위)
+            const tradeVolume = getTradeVolume(item.acc_trade_price_24h);
 
-          // 즐겨찾기 여부 확인
-          const isFavorite = favorites.includes(item.market);
+            // 즐겨찾기 여부 확인
+            const isFavorite = favorites.includes(item.market);
 
-          // 코인 아이콘 URL (실제로는 업비트 API에서 제공하지 않으므로 임의의 아이콘 사용)
-          const coinIconUrl = `https://static.upbit.com/logos/${item.market.split('-')[1]}.png`;
+            // 코인 아이콘 URL (실제로는 업비트 API에서 제공하지 않으므로 임의의 아이콘 사용)
+            const coinIconUrl = `https://static.upbit.com/logos/${item.market.split('-')[1]}.png`;
 
-          return (
-            // 코인 리스트
-            <div key={item.market} className="flex px-3 py-1.5 gap-[24px] border-b border-[rgba(92,92,92,0.7)] hover:bg-[rgba(92,92,92,0.3)] cursor-pointer" onClick={() => handleSelectCoin(item.market)}>
-              <div className="flex items-center w-[200px] min-w-[200px] gap-[10px]">
-                <div className="w-[36px] h-[36px] rounded-full overflow-hidden flex-shrink-0">
-                  <img
-                    src={coinIconUrl}
-                    alt={item.korean_name}
-                    className="w-full h-full object-cover"
-                    onError={(e) => {
-                      // 이미지 로드 실패 시 회색 배경으로 대체
-                      (e.target as HTMLImageElement).style.backgroundColor = '#777';
-                      (e.target as HTMLImageElement).style.display = 'block';
-                      (e.target as HTMLImageElement).src = '';
-                    }}
-                  />
+            return (
+              // 코인 리스트
+              <div key={item.market} className="flex px-4 py-1 gap-2 border-b border-[rgba(198,198,198,0.7)] hover:bg-[#F2F2F2] cursor-pointer" onClick={() => handleSelectCoin(item.market)}>
+                <div className="flex items-center min-w-[154px]">
+                  <div className="flex flex-col gap-1.5">
+                    <div className="flex items-center gap-[6px]">
+                      <div className="w-[16px] h-[16px] rounded-full overflow-hidden flex-shrink-0">
+                        <img
+                          src={coinIconUrl}
+                          alt={item.korean_name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            // 이미지 로드 실패 시 회색 배경으로 대체
+                            (e.target as HTMLImageElement).style.backgroundColor = '#777';
+                            (e.target as HTMLImageElement).style.display = 'block';
+                            (e.target as HTMLImageElement).src = '';
+                          }}
+                        />
+                      </div>
+                      <div className="font-semibold text-[#26262C] leading-1">{item.korean_name}</div>
+                    </div>
+                    <div className="flex items-center">
+                      <div className="font-light text-[12.5px] text-[#4C4C57] leading-3.5">{item.market}</div>
+                      {isFavorite && (
+                        <div
+                          className="ml-1.5 w-[10px] h-[10px] rounded-full"
+                          style={{
+                            background: 'linear-gradient(135deg, #59B3FB 0%, #47EF1D 70%, #FAD0C4 100%)',
+                          }}
+                        />
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="flex flex-col">
-                  <div className="font-bold text-[#F5F5F5]">{item.korean_name}</div>
-                  <div className="flex items-center">
-                    <div className="font-extralight text-[#CCCCCC]">{item.market}</div>
-                    {isFavorite && (
-                      <div
-                        className="ml-1.5 w-[10px] h-[10px] rounded-full"
-                        style={{
-                          background: 'linear-gradient(135deg, #59B3FB 0%, #47EF1D 70%, #FAD0C4 100%)',
-                        }}
-                      />
-                    )}
+
+                <div className="min-w-[94px] text-right items-start justify-end">
+                  <span className={`${priceColor} font-bold`}>{item.trade_price?.toLocaleString() || '-'}</span>
+                </div>
+
+                <div className={`min-w-[100px] text-right px-1 ${animatingItems[item.market] || ''}`}>
+                  <div className={`${priceColor} font-normal`}>{changeRate ? `${changeRate > 0 ? '▲' : '▼'} ${Math.abs(changeRate).toFixed(2)}%` : '-'}</div>
+                  <div className={`${priceColor} font-light`}>{item.change_price ? (item.change === 'RISE' ? '+' : item.change === 'FALL' ? '-' : '') + item.change_price.toLocaleString() : '-'}</div>
+                </div>
+
+                <div className="min-w-[82px] text-right">
+                  <div className="flex justify-end items-center">
+                    {(() => {
+                      const formatted = formatTradeVolume(tradeVolume);
+                      return (
+                        <>
+                          <span className="text-[#555555] font-medium text-right">{formatted.value}</span>
+                          <span className="text-[#555555] font-normal text-sm">{formatted.unit}</span>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               </div>
-
-              <div className="w-[126px] min-w-[126px] text-right items-start justify-end">
-                <div className="flex justify-end items-end gap-[2px]">
-                  <span className={`${priceColor} font-semibold`}>{item.trade_price?.toLocaleString() || '-'}</span>
-                  <span className={`${priceColor} text-[11px] font-normal pb-0.5`}>KRW</span>
-                </div>
-              </div>
-
-              <div className={`w-[122px] min-w-[122px] text-right px-1 ${animatingItems[item.market] || ''}`}>
-                <div className={`${priceColor} font-light`}>{changeRate ? `${changeRate > 0 ? '▲' : '▼'} ${Math.abs(changeRate).toFixed(2)}%` : '-'}</div>
-                <div className={`${priceColor} font-light`}>{item.change_price ? (item.change === 'RISE' ? '+' : item.change === 'FALL' ? '-' : '') + item.change_price.toLocaleString() : '-'}</div>
-              </div>
-
-              <div className="w-[80px] min-w-[80px] text-right">
-                <div className="flex justify-end items-center">
-                  {(() => {
-                    const formatted = formatTradeVolume(tradeVolume);
-                    return (
-                      <>
-                        <span className="text-[#F5F5F5] font-normal text-right">{formatted.value}</span>
-                        <span className="text-[#F5F5F5] font-normal text-sm">{formatted.unit}</span>
-                      </>
-                    );
-                  })()}
-                </div>
-              </div>
-            </div>
-          );
-        })}
+            );
+          })}
       </Scrollbar>
     </div>
   );
