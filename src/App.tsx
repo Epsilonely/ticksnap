@@ -12,19 +12,19 @@ function App() {
             <Block type={BlockType.BLOCK_TY_MARKET} />
           </div>
 
-          <div className="flex-1 grid grid-rows-[auto-1fr-1fr] gap-4 sm:gap-6 lg:gap-8">
+          <div className="flex-1 grid grid-rows-[1fr_auto_1fr] gap-4 sm:gap-6 lg:gap-8">
             {/* 상단 행: 오른쪽 블록 (5/12) */}
-            <div className="col-span-5">
+            <div>
               <Block type={BlockType.BLOCK_TY_ALARM_HISTORY} />
             </div>
 
             {/* 중간 행: 전체 너비 블록 */}
-            <div className="col-span-12">
+            <div className="min-h-[680px] max-h-[680px]">
               <Block type={BlockType.BLOCK_TY_COIN_DETAIL} />
             </div>
 
             {/* 하단 행: 전체 너비 블록 */}
-            <div className="col-span-12">
+            <div>
               <Block />
             </div>
           </div>
