@@ -6,11 +6,14 @@ import { toggleFavorite } from '../store/slices/favoriteSlice';
 import { fetchMarkets, fetchTickers } from '../services/UpbitApi';
 import Scrollbar from '../common/Scrollbar';
 
+type FilterTab = 'all' | 'favorites' | 'holdings';
+
 function MarketBlock() {
   const dispatch = useDispatch<AppDispatch>();
   const { markets, tickers, loading, error } = useSelector((state: RootState) => state.coin);
   const favorites = useSelector((state: RootState) => state.favorite.favorites);
   const [animatingItems, setAnimatingItems] = useState<Record<string, string>>({});
+  const [activeTab, setActiveTab] = useState<FilterTab>('all');
 
   // 마켓 목록 가져오기
   useEffect(() => {
@@ -94,6 +97,22 @@ function MarketBlock() {
     };
   });
 
+  // 탭별 데이터 필터링
+  const getFilteredData = () => {
+    switch (activeTab) {
+      case 'favorites':
+        return combineData.filter((item) => favorites.includes(item.market));
+      case 'holdings':
+        // 보유 코인 기능은 아직 개발되지 않았으므로 빈 배열 반환
+        return [];
+      case 'all':
+      default:
+        return combineData;
+    }
+  };
+
+  const filteredData = getFilteredData();
+
   // 코인 선택 핸들러
   const handleSelectCoin = (market: string) => {
     dispatch(selectCoin(market));
@@ -134,7 +153,20 @@ function MarketBlock() {
 
   return (
     <div className="h-full overflow-hidden bg-[#ffffff]">
-      {/* 카테고리 */}
+      {/* 필터링 탭 */}
+      <div className="flex bg-[#f8f9fa] border-b border-[#e9ecef]">
+        <button className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'all' ? 'bg-white text-[#333] border-b-2 border-[#007bff]' : 'text-[#666] hover:text-[#333] hover:bg-[#f1f3f4]'}`} onClick={() => setActiveTab('all')}>
+          전체
+        </button>
+        <button className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'favorites' ? 'bg-white text-[#333] border-b-2 border-[#007bff]' : 'text-[#666] hover:text-[#333] hover:bg-[#f1f3f4]'}`} onClick={() => setActiveTab('favorites')}>
+          관심
+        </button>
+        <button className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'holdings' ? 'bg-white text-[#333] border-b-2 border-[#007bff]' : 'text-[#666] hover:text-[#333] hover:bg-[#f1f3f4]'}`} onClick={() => setActiveTab('holdings')}>
+          보유
+        </button>
+      </div>
+
+      {/* 카테고리 헤더 */}
       <div className="bg-[#444444] flex px-4 py-0.5 text-[11px] gap-2 text-[#ffffff] font-light border-b border-[#5C5C5C]">
         <div className="min-w-[154px]">이름</div>
         <div className="min-w-[94px] text-right">현재가 (KRW)</div>
@@ -143,84 +175,90 @@ function MarketBlock() {
       </div>
 
       <Scrollbar className="h-[calc(100%-1rem)] text-[14px]">
-        {combineData
-          .sort((a, b) => b.acc_trade_price_24h - a.acc_trade_price_24h)
-          .map((item) => {
-            // 가격 변동률 계산
-            const changeRate = item.change === 'RISE' ? item.change_rate * 100 : item.change === 'FALL' ? -item.change_rate * 100 : 0;
+        {filteredData.length === 0 && activeTab === 'holdings' ? (
+          <div className="flex items-center justify-center h-32 text-gray-500">보유 코인 기능은 아직 개발 중입니다.</div>
+        ) : filteredData.length === 0 && activeTab === 'favorites' ? (
+          <div className="flex items-center justify-center h-32 text-gray-500">관심 등록된 코인이 없습니다.</div>
+        ) : (
+          filteredData
+            .sort((a, b) => b.acc_trade_price_24h - a.acc_trade_price_24h)
+            .map((item) => {
+              // 가격 변동률 계산
+              const changeRate = item.change === 'RISE' ? item.change_rate * 100 : item.change === 'FALL' ? -item.change_rate * 100 : 0;
 
-            // 가격 변동에 따른 색상 설정
-            const priceColor = item.change === 'RISE' ? 'text-[#F84F71]' : item.change === 'FALL' ? 'text-[#3578FF]' : 'text-gray-300';
+              // 가격 변동에 따른 색상 설정
+              const priceColor = item.change === 'RISE' ? 'text-[#F84F71]' : item.change === 'FALL' ? 'text-[#3578FF]' : 'text-gray-300';
 
-            // 거래대금 가져오기 (원 단위)
-            const tradeVolume = getTradeVolume(item.acc_trade_price_24h);
+              // 거래대금 가져오기 (원 단위)
+              const tradeVolume = getTradeVolume(item.acc_trade_price_24h);
 
-            // 즐겨찾기 여부 확인
-            const isFavorite = favorites.includes(item.market);
+              // 즐겨찾기 여부 확인
+              const isFavorite = favorites.includes(item.market);
 
-            // 코인 아이콘 URL (실제로는 업비트 API에서 제공하지 않으므로 임의의 아이콘 사용)
-            const coinIconUrl = `https://static.upbit.com/logos/${item.market.split('-')[1]}.png`;
+              // 코인 아이콘 URL (실제로는 업비트 API에서 제공하지 않으므로 임의의 아이콘 사용)
+              const coinIconUrl = `https://static.upbit.com/logos/${item.market.split('-')[1]}.png`;
 
-            return (
-              // 코인 리스트
-              <div key={item.market} className="flex px-4 py-1 gap-2 border-b border-[rgba(225,225,225,0.4)] hover:bg-[#F2F2F2] cursor-pointer" onClick={() => handleSelectCoin(item.market)}>
-                <div className="flex items-center min-w-[154px]">
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center gap-[6px]">
-                      <div className="w-[16px] h-[16px] rounded-full overflow-hidden flex-shrink-0">
-                        <img
-                          src={coinIconUrl}
-                          alt={item.korean_name}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            // 이미지 로드 실패 시 회색 배경으로 대체
-                            (e.target as HTMLImageElement).style.backgroundColor = '#777';
-                            (e.target as HTMLImageElement).style.display = 'block';
-                            (e.target as HTMLImageElement).src = '';
-                          }}
-                        />
+              return (
+                // 코인 리스트
+                <div key={item.market} className="flex px-4 py-1 gap-2 border-b border-[rgba(225,225,225,0.4)] hover:bg-[#F2F2F2] cursor-pointer" onClick={() => handleSelectCoin(item.market)}>
+                  <div className="flex items-center min-w-[154px]">
+                    <div className="flex flex-col gap-1.5">
+                      <div className="flex items-center gap-[6px]">
+                        <div className="w-[16px] h-[16px] rounded-full overflow-hidden flex-shrink-0">
+                          <img
+                            src={coinIconUrl}
+                            alt={item.korean_name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              // 이미지 로드 실패 시 회색 배경으로 대체
+                              (e.target as HTMLImageElement).style.backgroundColor = '#777';
+                              (e.target as HTMLImageElement).style.display = 'block';
+                              (e.target as HTMLImageElement).src = '';
+                            }}
+                          />
+                        </div>
+                        <div className="font-semibold text-[#26262C] leading-1">{item.korean_name}</div>
                       </div>
-                      <div className="font-semibold text-[#26262C] leading-1">{item.korean_name}</div>
+                      <div className="flex items-center">
+                        <div className="font-light text-[12.5px] text-[#4C4C57] leading-3.5">{item.market}</div>
+                        {isFavorite && (
+                          <div
+                            className="ml-1.5 w-[10px] h-[10px] rounded-full"
+                            style={{
+                              background: 'linear-gradient(135deg, #59B3FB 0%, #47EF1D 70%, #FAD0C4 100%)',
+                            }}
+                          />
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center">
-                      <div className="font-light text-[12.5px] text-[#4C4C57] leading-3.5">{item.market}</div>
-                      {isFavorite && (
-                        <div
-                          className="ml-1.5 w-[10px] h-[10px] rounded-full"
-                          style={{
-                            background: 'linear-gradient(135deg, #59B3FB 0%, #47EF1D 70%, #FAD0C4 100%)',
-                          }}
-                        />
-                      )}
+                  </div>
+
+                  <div className="min-w-[94px] text-right items-start justify-end">
+                    <span className={`${priceColor} font-bold`}>{item.trade_price?.toLocaleString() || '-'}</span>
+                  </div>
+
+                  <div className={`min-w-[100px] text-right px-1 ${animatingItems[item.market] || ''}`}>
+                    <div className={`${priceColor} font-normal`}>{changeRate ? `${changeRate > 0 ? '▲' : '▼'} ${Math.abs(changeRate).toFixed(2)}%` : '-'}</div>
+                    <div className={`${priceColor} font-light`}>{item.change_price ? (item.change === 'RISE' ? '+' : item.change === 'FALL' ? '-' : '') + item.change_price.toLocaleString() : '-'}</div>
+                  </div>
+
+                  <div className="min-w-[82px] text-right">
+                    <div className="flex justify-end items-center">
+                      {(() => {
+                        const formatted = formatTradeVolume(tradeVolume);
+                        return (
+                          <>
+                            <span className="text-[#555555] font-medium text-right">{formatted.value}</span>
+                            <span className="text-[#555555] font-normal text-sm">{formatted.unit}</span>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
                 </div>
-
-                <div className="min-w-[94px] text-right items-start justify-end">
-                  <span className={`${priceColor} font-bold`}>{item.trade_price?.toLocaleString() || '-'}</span>
-                </div>
-
-                <div className={`min-w-[100px] text-right px-1 ${animatingItems[item.market] || ''}`}>
-                  <div className={`${priceColor} font-normal`}>{changeRate ? `${changeRate > 0 ? '▲' : '▼'} ${Math.abs(changeRate).toFixed(2)}%` : '-'}</div>
-                  <div className={`${priceColor} font-light`}>{item.change_price ? (item.change === 'RISE' ? '+' : item.change === 'FALL' ? '-' : '') + item.change_price.toLocaleString() : '-'}</div>
-                </div>
-
-                <div className="min-w-[82px] text-right">
-                  <div className="flex justify-end items-center">
-                    {(() => {
-                      const formatted = formatTradeVolume(tradeVolume);
-                      return (
-                        <>
-                          <span className="text-[#555555] font-medium text-right">{formatted.value}</span>
-                          <span className="text-[#555555] font-normal text-sm">{formatted.unit}</span>
-                        </>
-                      );
-                    })()}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+              );
+            })
+        )}
       </Scrollbar>
     </div>
   );
