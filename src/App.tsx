@@ -1,8 +1,13 @@
+import { useState } from 'react';
 import { Provider } from 'react-redux';
 import { store } from './store';
 import Block, { BlockType } from './block/Block';
+import Portfolio from './components/Portfolio';
+
+type MiddleTabType = 'exchange' | 'investment';
 
 function App() {
+  const [activeMiddleTab, setActiveMiddleTab] = useState<MiddleTabType>('exchange');
   return (
     <Provider store={store}>
       <div className="flex justify-center w-full h-screen bg-[#CCCCCC]">
@@ -18,9 +23,20 @@ function App() {
               <Block type={BlockType.BLOCK_TY_ALARM_HISTORY} />
             </div>
 
-            {/* 중간 행: 전체 너비 블록 */}
-            <div className="min-h-[680px] max-h-[680px]">
-              <Block type={BlockType.BLOCK_TY_COIN_DETAIL} />
+            {/* 중간 행: 탭이 있는 블록 */}
+            <div className="min-h-[680px] max-h-[680px] bg-white rounded-lg overflow-hidden">
+              {/* 탭 헤더 */}
+              <div className="flex bg-[#f8f9fa] border-b border-[#e9ecef]">
+                <button className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${activeMiddleTab === 'exchange' ? 'bg-white text-[#333] border-b-2 border-[#007bff]' : 'text-[#666] hover:text-[#333] hover:bg-[#f1f3f4]'}`} onClick={() => setActiveMiddleTab('exchange')}>
+                  거래소
+                </button>
+                <button className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${activeMiddleTab === 'investment' ? 'bg-white text-[#333] border-b-2 border-[#007bff]' : 'text-[#666] hover:text-[#333] hover:bg-[#f1f3f4]'}`} onClick={() => setActiveMiddleTab('investment')}>
+                  투자내역
+                </button>
+              </div>
+
+              {/* 탭 컨텐츠 */}
+              <div className="h-[calc(100%-52px)]">{activeMiddleTab === 'exchange' ? <Block type={BlockType.BLOCK_TY_COIN_DETAIL} /> : <Portfolio />}</div>
             </div>
 
             {/* 하단 행: 전체 너비 블록 */}
