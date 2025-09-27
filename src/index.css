@@ -11,6 +11,13 @@ body {
 ::-webkit-scrollbar {
   display: none;
 }
+
+:root {
+  --color-rise: #26262c;
+  --color-fall: #4c4c57;
+  --color-unchanged: #333333;
+}
+
 @keyframes price-up-pulse {
   0%,
   100% {
@@ -41,4 +48,17 @@ body {
   animation: price-down-pulse 0.25s ease-in-out;
   outline: 1px solid transparent;
   outline-offset: -2px;
+}
+
+/* 가격 색상 클래스 */
+.text-price-rise {
+  color: var(--color-rise) !important;
+}
+
+.text-price-fall {
+  color: var(--color-fall) !important;
+}
+
+.text-price-unchanged {
+  color: var(--color-unchanged) !important;
 }
