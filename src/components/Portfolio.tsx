@@ -85,17 +85,17 @@ function Portfolio() {
         <div className="grid grid-cols-3 gap-4 text-center">
           <div>
             <div className="text-sm text-gray-600">총 자산</div>
-            <div className="text-lg font-bold text-[#333]">{totalAssetValue.toLocaleString()}원</div>
+            <div className="text-lg font-bold text-[#333]">{Math.floor(totalAssetValue).toLocaleString()}원</div>
           </div>
           <div>
             <div className="text-sm text-gray-600">총 투자금</div>
-            <div className="text-lg font-bold text-[#333]">{totalInvestment.toLocaleString()}원</div>
+            <div className="text-lg font-bold text-[#333]">{Math.floor(totalInvestment).toLocaleString()}원</div>
           </div>
           <div>
             <div className="text-sm text-gray-600">손익</div>
             <div className={`text-lg font-bold ${totalProfitLoss >= 0 ? 'text-[#F84F71]' : 'text-[#3578FF]'}`}>
               {totalProfitLoss >= 0 ? '+' : ''}
-              {totalProfitLoss.toLocaleString()}원
+              {Math.floor(totalProfitLoss).toLocaleString()}원
               <div className="text-sm">
                 ({totalProfitLossRate >= 0 ? '+' : ''}
                 {totalProfitLossRate.toFixed(2)}%)
@@ -154,21 +154,21 @@ function Portfolio() {
                 </div>
 
                 <div className="min-w-[100px] text-right">
-                  <div className="font-medium">{item.avg_buy_price.toLocaleString()}원</div>
+                  <div className="font-medium">{Math.floor(item.avg_buy_price).toLocaleString()}원</div>
                 </div>
 
                 <div className="min-w-[100px] text-right">
-                  <div className="font-medium">{item.current_price.toLocaleString()}원</div>
+                  <div className="font-medium">{Math.floor(item.current_price).toLocaleString()}원</div>
                 </div>
 
                 <div className="min-w-[100px] text-right">
-                  <div className="font-bold">{evaluationAmount.toLocaleString()}원</div>
+                  <div className="font-bold">{Math.floor(evaluationAmount).toLocaleString()}원</div>
                 </div>
 
                 <div className={`min-w-[100px] text-right ${profitColor}`}>
                   <div className="font-bold">
                     {profitLoss >= 0 ? '+' : ''}
-                    {profitLoss.toLocaleString()}원
+                    {Math.floor(profitLoss).toLocaleString()}원
                   </div>
                   <div className="text-sm">
                     ({profitLossRate >= 0 ? '+' : ''}
