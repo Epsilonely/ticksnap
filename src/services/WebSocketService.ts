@@ -93,7 +93,7 @@ export class UpbitWebSocketService {
       {
         type: 'ticker',
         codes: this.markets,
-        isOnlyRealtime: true,
+        isOnlyRealtime: false,
       },
     ]);
 
