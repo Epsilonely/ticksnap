@@ -11,34 +11,58 @@ body {
 ::-webkit-scrollbar {
   display: none;
 }
+
+:root {
+  --color-rise: #f84f71;
+  --color-fall: #4c4c57;
+  --color-unchanged: #333333;
+}
+
 @keyframes price-up-pulse {
-  0%,
-  100% {
-    outline-color: rgba(241, 41, 90, 0);
+  0% {
+    outline-color: #f84f71; /* 즉시 빨간색 표시 */
   }
-  50% {
-    outline-color: #f84f71;
+  80% {
+    outline-color: #f84f71; /* 대부분의 시간 동안 빨간색 유지 */
+  }
+  100% {
+    outline-color: rgba(241, 41, 90, 0); /* 마지막에 한번에 사라짐 */
   }
 }
 
 @keyframes price-down-pulse {
-  0%,
-  100% {
-    outline-color: rgba(63, 81, 181, 0);
+  0% {
+    outline-color: #60a5fa; /* 즉시 파란색 표시 */
   }
-  50% {
-    outline-color: #60a5fa;
+  80% {
+    outline-color: #60a5fa; /* 대부분의 시간 동안 파란색 유지 */
+  }
+  100% {
+    outline-color: rgba(63, 81, 181, 0); /* 마지막에 한번에 사라짐 */
   }
 }
 
 .price-up-animation {
-  animation: price-up-pulse 0.25s ease-in-out;
+  animation: price-up-pulse 0.5s ease-out;
   outline: 1px solid transparent;
   outline-offset: -2px; /* outline이 요소 경계에 딱 맞도록 설정 */
 }
 
 .price-down-animation {
-  animation: price-down-pulse 0.25s ease-in-out;
+  animation: price-down-pulse 0.5s ease-out;
   outline: 1px solid transparent;
   outline-offset: -2px;
+}
+
+/* 가격 색상 클래스 */
+.text-price-rise {
+  color: var(--color-rise) !important;
+}
+
+.text-price-fall {
+  color: var(--color-fall) !important;
+}
+
+.text-price-unchanged {
+  color: var(--color-unchanged) !important;
 }

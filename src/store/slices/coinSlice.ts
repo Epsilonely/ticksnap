@@ -1,11 +1,14 @@
 import { createSlice, createAsyncThunk, PayloadAction } from '@reduxjs/toolkit';
 import { fetchMarkets, fetchTickers, fetchCandles, CandleData } from '../../services/UpbitApi';
+import { getUnifiedExchangeService } from '../../services/UnifiedExchangeService';
 import { CoinState, IntervalType, TickData } from '../types';
+import { UnifiedCoinData } from '../../utils/symbolMatcher';
 
 // 초기 상태
 const initialState: CoinState = {
   markets: [],
   tickers: [],
+  unifiedCoins: [],
   selectedCoin: null,
   loading: true,
   error: null,
@@ -27,6 +30,12 @@ export const fetchTickersAsync = createAsyncThunk('coin/fetchTickers', async (ma
 
 export const fetchCandlesAsync = createAsyncThunk('coin/fetchCandles', async ({ market, interval }: { market: string; interval: IntervalType }) => {
   return await fetchCandles(market, interval, 36);
+});
+
+// 통합 거래소 데이터 가져오기
+export const fetchUnifiedCoinsAsync = createAsyncThunk('coin/fetchUnifiedCoins', async () => {
+  const unifiedService = getUnifiedExchangeService();
+  return await unifiedService.getUnifiedTickers();
 });
 
 const coinSlice = createSlice({
@@ -64,6 +73,40 @@ const coinSlice = createSlice({
     updateCandleData: (state, action: PayloadAction<CandleData[]>) => {
       state.candleData = action.payload;
     },
+    updateUnifiedCoins: (state, action: PayloadAction<UnifiedCoinData[]>) => {
+      state.unifiedCoins = action.payload;
+    },
+    updateUnifiedCoinData: (state, action: PayloadAction<{ coinSymbol: string; data: any; exchange: 'upbit' | 'binance' }>) => {
+      const { coinSymbol, data, exchange } = action.payload;
+      const coinIndex = state.unifiedCoins.findIndex((coin) => coin.coinSymbol === coinSymbol);
+
+      if (coinIndex !== -1) {
+        if (exchange === 'upbit') {
+          state.unifiedCoins[coinIndex].upbit = {
+            symbol: data.code || data.market,
+            price: data.trade_price,
+            change: data.change,
+            changeRate: data.change_rate,
+            changePrice: data.change_price,
+            tradeVolume: data.acc_trade_price_24h || data.acc_trade_price,
+          };
+        } else if (exchange === 'binance') {
+          state.unifiedCoins[coinIndex].binance = {
+            symbol: data.code || data.market,
+            price: data.trade_price,
+            change: data.change,
+            changeRate: data.change_rate,
+            changePrice: data.change_price,
+            tradeVolume: data.acc_trade_price,
+          };
+        }
+
+        // 최대 거래량 업데이트
+        const upbitVolume = state.unifiedCoins[coinIndex].upbit?.tradeVolume || 0;
+        const binanceVolume = state.unifiedCoins[coinIndex].binance?.tradeVolume || 0;
+        state.unifiedCoins[coinIndex].maxTradeVolume = Math.max(upbitVolume, binanceVolume);
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -94,9 +137,20 @@ const coinSlice = createSlice({
       })
       .addCase(fetchCandlesAsync.rejected, (state, action) => {
         state.error = '캔들 데이터를 가져오는 중 오류가 발생했습니다.';
+      })
+      .addCase(fetchUnifiedCoinsAsync.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchUnifiedCoinsAsync.fulfilled, (state, action) => {
+        state.unifiedCoins = action.payload;
+        state.loading = false;
+      })
+      .addCase(fetchUnifiedCoinsAsync.rejected, (state, action) => {
+        state.error = '통합 거래소 데이터를 가져오는 중 오류가 발생했습니다.';
+        state.loading = false;
       });
   },
 });
 
-export const { selectCoin, setSelectedInterval, updateTickers, updateWebSocketData, updateFavoriteData, updateCandleData, addTickData, clearTickData } = coinSlice.actions;
+export const { selectCoin, setSelectedInterval, updateTickers, updateWebSocketData, updateFavoriteData, updateCandleData, addTickData, clearTickData, updateUnifiedCoins, updateUnifiedCoinData } = coinSlice.actions;
 export default coinSlice.reducer;

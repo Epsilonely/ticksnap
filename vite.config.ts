@@ -12,6 +12,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/upbit/, ''),
       },
+      '/api/binance': {
+        target: 'https://api.binance.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/binance/, ''),
+      },
     },
     port: 3000,
   },

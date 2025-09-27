@@ -13,7 +13,7 @@ function App() {
       <div className="flex justify-center w-full h-screen bg-[#CCCCCC]">
         <div className="flex gap-2 sm:gap-2 lg:gap-4 md:max-w-[1024px] lg:max-w-[1128px] xl:max-w-[1980px] 2xl:max-w-[2400px] w-full mx-auto h-full p-2 sm:p-4 lg:p-6">
           {/* 왼쪽 사이드바 - 전체 너비의 약 30% - 마켓 블록 */}
-          <div className="min-w-[430px]">
+          <div className="min-w-[380px]">
             <Block type={BlockType.BLOCK_TY_MARKET} />
           </div>
 
