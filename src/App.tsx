@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Provider } from 'react-redux';
 import { store } from './store';
+import { dataManager } from './services/DataManager';
 import Block, { BlockType } from './block/Block';
 import Portfolio from './components/Portfolio';
 
@@ -8,6 +9,53 @@ type MiddleTabType = 'exchange' | 'investment';
 
 function App() {
   const [activeMiddleTab, setActiveMiddleTab] = useState<MiddleTabType>('exchange');
+
+  // DataManager 초기화
+  useEffect(() => {
+    const initializeDataManager = async () => {
+      try {
+        // Redux dispatch 설정
+        dataManager.setDispatch(store.dispatch);
+        
+        // DataManager 초기화
+        await dataManager.initialize();
+        
+        // localStorage에서 기존 관심 코인 불러와서 웹소켓 연결
+        const storedFavorites = localStorage.getItem('favorites');
+        if (storedFavorites) {
+          const favorites = JSON.parse(storedFavorites);
+          console.log('기존 관심 코인 복원:', favorites);
+          
+          // 관심 코인 심볼들을 추출 (코인 심볼로 변환)
+          const favoriteSymbols = favorites.map((fav: string) => {
+            // KRW-BTC -> BTC, BTCUSDT -> BTC 형태로 변환
+            if (fav.startsWith('KRW-')) {
+              return fav.replace('KRW-', '');
+            }
+            if (fav.endsWith('USDT')) {
+              return fav.replace('USDT', '');
+            }
+            return fav;
+          });
+          
+          // DataManager에 관심 코인 전달하여 웹소켓 연결
+          dataManager.updateFavoriteCoins(favoriteSymbols);
+        }
+        
+        console.log('앱 초기화 완료');
+      } catch (error) {
+        console.error('앱 초기화 실패:', error);
+      }
+    };
+
+    initializeDataManager();
+
+    // 컴포넌트 언마운트 시 정리
+    return () => {
+      dataManager.destroy();
+    };
+  }, []);
+
   return (
     <Provider store={store}>
       <div className="flex justify-center w-full h-screen bg-[#CCCCCC]">
