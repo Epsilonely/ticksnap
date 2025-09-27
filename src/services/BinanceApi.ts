@@ -50,7 +50,7 @@ interface BinanceCandleData {
 // 바인낸스 USDT 마켓 목록 가져오기
 export const fetchBinanceMarkets = async (): Promise<BinanceSymbolInfo[]> => {
   try {
-    const response = await axios.get<BinanceExchangeInfo>('https://api.binance.com/api/v3/exchangeInfo');
+    const response = await axios.get<BinanceExchangeInfo>('/api/binance/api/v3/exchangeInfo');
 
     // USDT 페어만 필터링하고 활성 상태인 것만
     return response.data.symbols.filter((symbol) => symbol.quoteAsset === 'USDT' && symbol.status === 'TRADING');
@@ -63,7 +63,7 @@ export const fetchBinanceMarkets = async (): Promise<BinanceSymbolInfo[]> => {
 // 바인낸스 현재가 정보 가져오기
 export const fetchBinanceTickers = async (symbols?: string[]): Promise<BinanceTickerData[]> => {
   try {
-    let url = 'https://api.binance.com/api/v3/ticker/24hr';
+    let url = '/api/binance/api/v3/ticker/24hr';
 
     // 특정 심볼들만 요청하는 경우
     if (symbols && symbols.length > 0) {
@@ -113,7 +113,7 @@ export const fetchBinanceCandles = async (symbol: string, interval: IntervalType
         binanceInterval = '1m';
     }
 
-    const response = await axios.get<BinanceCandleData[]>(`https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${binanceInterval}&limit=${limit}`);
+    const response = await axios.get<BinanceCandleData[]>(`/api/binance/api/v3/klines?symbol=${symbol}&interval=${binanceInterval}&limit=${limit}`);
 
     return response.data;
   } catch (error) {

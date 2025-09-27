@@ -1,4 +1,5 @@
 import { CandleData } from '../services/UpbitApi';
+import { UnifiedCoinData } from '../utils/symbolMatcher';
 
 export interface TickData {
   timestamp: number;
@@ -10,6 +11,7 @@ export interface TickData {
 export interface CoinState {
   markets: Array<{ market: string; korean_name: string }>;
   tickers: any[];
+  unifiedCoins: UnifiedCoinData[]; // 통합 거래소 데이터
   selectedCoin: string | null;
   loading: boolean;
   error: string | null;
