@@ -1,12 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
-import { fetchUnifiedCoinsAsync, selectCoin, updateUnifiedCoinData } from '../store/slices/coinSlice';
+import { selectCoin } from '../store/slices/coinSlice';
 import { toggleFavorite } from '../store/slices/favoriteSlice';
-import { getWebSocketService } from '../services/WebSocketService';
-import { getBinanceWebSocketService } from '../services/BinanceWebSocketService';
-import { getUnifiedExchangeService } from '../services/UnifiedExchangeService';
-import { extractCoinSymbol } from '../utils/symbolMatcher';
+import { dataManager } from '../services/DataManager';
 import Scrollbar from '../common/Scrollbar';
 import ExchangePriceDisplay from '../components/ExchangePriceDisplay';
 
@@ -18,76 +15,22 @@ function MarketBlock() {
   const favorites = useSelector((state: RootState) => state.favorite.favorites);
   const [activeTab, setActiveTab] = useState<FilterTab>('all');
 
-  // 초기 통합 거래소 데이터 가져오기 (한 번만)
+  // 관심 코인 변경 시 DataManager에 알림
   useEffect(() => {
-    dispatch(fetchUnifiedCoinsAsync());
-  }, [dispatch]);
-
-  // 관심 코인과 선택된 코인에 대한 웹소켓 연결
-  useEffect(() => {
-    // 관심 등록된 코인들과 선택된 코인을 합쳐서 웹소켓 연결 대상 결정
-    const targetCoins = new Set([...favorites]);
-    if (selectedCoin) {
-      targetCoins.add(selectedCoin);
-    }
-
-    if (targetCoins.size === 0) return; // 관심 코인이나 선택된 코인이 없으면 연결 안함
-
-    // 대상 코인들에 해당하는 심볼들 찾기
-    const upbitSymbols: string[] = [];
-    const binanceSymbols: string[] = [];
-
-    unifiedCoins.forEach((coin) => {
-      const isTarget = targetCoins.has(coin.upbit?.symbol || '') || targetCoins.has(coin.binance?.symbol || '') || targetCoins.has(coin.coinSymbol);
-
-      if (isTarget) {
-        if (coin.upbit) upbitSymbols.push(coin.upbit.symbol);
-        if (coin.binance) binanceSymbols.push(coin.binance.symbol);
+    // 관심 코인 심볼들을 추출 (코인 심볼로 변환)
+    const favoriteSymbols = favorites.map(fav => {
+      // KRW-BTC -> BTC, BTCUSDT -> BTC 형태로 변환
+      if (fav.startsWith('KRW-')) {
+        return fav.replace('KRW-', '');
       }
+      if (fav.endsWith('USDT')) {
+        return fav.replace('USDT', '');
+      }
+      return fav;
     });
 
-    // 업비트 웹소켓 연결
-    if (upbitSymbols.length > 0) {
-      const upbitWs = getWebSocketService((data) => {
-        if (data && data.code) {
-          const coinSymbol = extractCoinSymbol(data.code);
-          dispatch(
-            updateUnifiedCoinData({
-              coinSymbol,
-              data,
-              exchange: 'upbit',
-            })
-          );
-        }
-      });
-      upbitWs.connect(upbitSymbols);
-    }
-
-    // 바인낸스 웹소켓 연결
-    if (binanceSymbols.length > 0) {
-      const binanceWs = getBinanceWebSocketService((data) => {
-        if (data && data.code) {
-          const coinSymbol = data.code.replace('USDT', '');
-          dispatch(
-            updateUnifiedCoinData({
-              coinSymbol,
-              data,
-              exchange: 'binance',
-            })
-          );
-        }
-      });
-      binanceWs.connect(binanceSymbols);
-    }
-
-    return () => {
-      // 컴포넌트 언마운트 시 웹소켓 연결 해제
-      const upbitWs = getWebSocketService(() => {});
-      const binanceWs = getBinanceWebSocketService(() => {});
-      upbitWs.disconnect();
-      binanceWs.disconnect();
-    };
-  }, [favorites, selectedCoin, unifiedCoins, dispatch]);
+    dataManager.updateFavoriteCoins(favoriteSymbols);
+  }, [favorites]);
 
   // 탭별 데이터 필터링
   const getFilteredData = () => {
@@ -222,10 +165,28 @@ function MarketBlock() {
                   {/* 가격 정보 */}
                   <div className="flex-1 flex flex-col gap-1">
                     {/* 업비트 가격 */}
-                    {coin.upbit && <ExchangePriceDisplay key={`${coin.coinSymbol}-upbit`} exchange="upbit" price={coin.upbit.price} change={coin.upbit.change} changeRate={coin.upbit.changeRate} coinSymbol={coin.coinSymbol} />}
+                    {coin.upbit && (
+                      <ExchangePriceDisplay 
+                        key={`${coin.coinSymbol}-upbit`} 
+                        exchange="upbit" 
+                        price={coin.upbit.price} 
+                        change={coin.upbit.change as 'RISE' | 'FALL' | 'EVEN'} 
+                        changeRate={coin.upbit.changeRate} 
+                        coinSymbol={coin.coinSymbol} 
+                      />
+                    )}
 
                     {/* 바인낸스 가격 */}
-                    {coin.binance && <ExchangePriceDisplay key={`${coin.coinSymbol}-binance`} exchange="binance" price={coin.binance.price} change={coin.binance.change} changeRate={coin.binance.changeRate} coinSymbol={coin.coinSymbol} />}
+                    {coin.binance && (
+                      <ExchangePriceDisplay 
+                        key={`${coin.coinSymbol}-binance`} 
+                        exchange="binance" 
+                        price={coin.binance.price} 
+                        change={coin.binance.change as 'RISE' | 'FALL' | 'EVEN'} 
+                        changeRate={coin.binance.changeRate} 
+                        coinSymbol={coin.coinSymbol} 
+                      />
+                    )}
                   </div>
                 </div>
               );

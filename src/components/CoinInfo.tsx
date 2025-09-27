@@ -1,6 +1,5 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { IntervalType } from '../store/types';
-import { setSelectedInterval, fetchCandlesAsync } from '../store/slices/coinSlice';
 import MiniChart from './MiniChart';
 
 interface CoinInfoProps {
@@ -63,10 +62,8 @@ function CoinInfo({ coinData, selectedCoin, candleData, tickData, selectedInterv
         prevClosingPrice={coinData.prev_closing_price || 0}
         selectedInterval={selectedInterval}
         onIntervalChange={(interval) => {
-          dispatch(setSelectedInterval(interval));
-          if (selectedCoin) {
-            dispatch(fetchCandlesAsync({ market: selectedCoin, interval }) as any);
-          }
+          // TODO: DataManager에서 캔들 데이터 로딩 기능 구현 필요
+          console.log('인터벌 변경:', interval);
         }}
       />
 
