@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import UpbitLogo from '../../public/img/UPBIT_LOGO.svg';
 import BinanceLogo from '../../public/img/BINANCE_LOGO.svg';
 
@@ -7,10 +7,39 @@ interface ExchangePriceDisplayProps {
   price: number;
   change: 'RISE' | 'FALL' | 'EVEN';
   changeRate: number;
-  currency?: string;
+  coinSymbol: string; // 고유 식별자 추가
 }
 
-const ExchangePriceDisplay: React.FC<ExchangePriceDisplayProps> = ({ exchange, price, change, changeRate, currency = '' }) => {
+const ExchangePriceDisplay: React.FC<ExchangePriceDisplayProps> = ({ exchange, price, change, changeRate, coinSymbol }) => {
+  const [animationClass, setAnimationClass] = useState<string>('');
+  const prevPriceRef = useRef<number | null>(null);
+  const uniqueKey = `${coinSymbol}-${exchange}`; // 고유 키 생성
+
+  // 가격 변동 감지 및 애니메이션 처리
+  useEffect(() => {
+    if (prevPriceRef.current !== null && prevPriceRef.current !== price) {
+      const prevPrice = prevPriceRef.current;
+
+      if (Math.abs(price - prevPrice) > 0.00001) {
+        // 미세한 변동 무시
+        if (price > prevPrice) {
+          setAnimationClass('price-up-animation');
+        } else if (price < prevPrice) {
+          setAnimationClass('price-down-animation');
+        }
+
+        // 애니메이션 제거
+        const timer = setTimeout(() => {
+          setAnimationClass('');
+        }, 250); // 0.25초 후 애니메이션 클래스 제거
+
+        return () => clearTimeout(timer);
+      }
+    }
+
+    prevPriceRef.current = price;
+  }, [price, uniqueKey]); // uniqueKey 의존성 추가
+
   const getColorClass = (changeType: 'RISE' | 'FALL' | 'EVEN') => {
     switch (changeType) {
       case 'RISE':
@@ -52,11 +81,8 @@ const ExchangePriceDisplay: React.FC<ExchangePriceDisplayProps> = ({ exchange, p
             }}
           />
         </div>
-        <div className="flex gap-1 font-light text-[14px]">
-          <span className={`min-w-[84px] ${getColorClass(change)}`}>
-            {currency}
-            {price.toLocaleString()}
-          </span>
+        <div className="flex gap-1 font-medium text-[14px]">
+          <span className={`min-w-[84px] ${getColorClass(change)} ${animationClass}`}>{price.toLocaleString()}</span>
           <span className={getColorClass(change)}>
             {getChangeIcon(change)}
             {(changeRate * 100).toFixed(2)}%
