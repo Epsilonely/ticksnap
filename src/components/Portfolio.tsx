@@ -19,41 +19,50 @@ function Portfolio() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 업비트 계좌 정보 가져오기 (한 번만 실행)
+  // 프라이빗 웹소켓으로만 실시간 자산 정보 가져오기
   useEffect(() => {
-    const fetchAccountData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+    const initializeWebSocketTracking = () => {
+      setLoading(true);
+      setError(null);
 
-        const accounts = await upbitAccountApi.getAccounts();
+      // 실시간 자산 업데이트 콜백 함수
+      const handleAssetUpdate = (assets: AccountBalance[]) => {
+        console.log('📊 Portfolio: 실시간 자산 업데이트 받음', assets);
+        
+        // 웹소켓으로 받은 자산 정보로 portfolioData 업데이트
+        const updatedPortfolioItems: PortfolioItem[] = assets
+          .filter(account => account.currency !== 'KRW' && parseFloat(account.balance) > 0)
+          .map((account: AccountBalance) => {
+            const market = `KRW-${account.currency}`;
+            return {
+              market,
+              korean_name: account.currency,
+              balance: parseFloat(account.balance),
+              avg_buy_price: parseFloat(account.avg_buy_price),
+              current_price: 0, // 현재가는 아래에서 업데이트
+            };
+          });
 
-        // KRW가 아닌 자산만 필터링하고 잔고가 0이 아닌 것만
-        const cryptoAccounts = accounts.filter((account: AccountBalance) => account.currency !== 'KRW' && parseFloat(account.balance) > 0);
+        setPortfolioData(updatedPortfolioItems);
+        setLoading(false); // 첫 데이터 받으면 로딩 종료
+      };
 
-        const portfolioItems: PortfolioItem[] = cryptoAccounts.map((account: AccountBalance) => {
-          const market = `KRW-${account.currency}`;
+      // 실시간 자산 업데이트 콜백 등록
+      upbitAccountApi.onAssetUpdate(handleAssetUpdate);
 
-          return {
-            market,
-            korean_name: account.currency, // 초기값, 나중에 업데이트
-            balance: parseFloat(account.balance),
-            avg_buy_price: parseFloat(account.avg_buy_price),
-            current_price: 0, // 현재가는 아래에서 업데이트
-          };
-        });
+      // 프라이빗 웹소켓 연결
+      upbitAccountApi.connectPrivateWebSocket();
 
-        setPortfolioData(portfolioItems);
-      } catch (err) {
-        console.error('계좌 정보 조회 실패:', err);
-        setError('계좌 정보를 불러오는데 실패했습니다. API 키를 확인해주세요.');
-      } finally {
-        setLoading(false);
-      }
+      // cleanup 함수 반환
+      return () => {
+        upbitAccountApi.offAssetUpdate(handleAssetUpdate);
+      };
     };
 
-    // 컴포넌트 마운트 시 한 번만 실행
-    fetchAccountData();
+    const cleanup = initializeWebSocketTracking();
+    
+    // 컴포넌트 언마운트 시 정리
+    return cleanup;
   }, []); // 빈 의존성 배열로 한 번만 실행
 
   // 현재가 정보 업데이트 및 코인 이름 업데이트

@@ -4,6 +4,8 @@ const { fileURLToPath } = await import('url');
 const isDev = await import('electron-is-dev');
 const crypto = await import('crypto');
 const { v4: uuidv4 } = await import('uuid');
+const WebSocket = await import('ws');
+const jwt = await import('jsonwebtoken');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -55,107 +57,176 @@ app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });
 
-// Upbit API 관련 함수들
-class UpbitAPI {
+// 업비트 프라이빗 웹소켓 클래스
+class UpbitPrivateWebSocket {
   constructor(accessKey, secretKey) {
     this.accessKey = accessKey;
     this.secretKey = secretKey;
-    this.serverUrl = 'https://api.upbit.com';
+    this.webSocket = null;
+    this.currentAssets = [];
   }
 
-  base64UrlEncode(str) {
-    return Buffer.from(str).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-  }
-
-  async generateAuthToken(query = '') {
-    const payload = {
-      access_key: this.accessKey,
-      nonce: uuidv4(),
-    };
-
-    if (query) {
-      const queryHash = crypto.createHash('sha512').update(query, 'utf-8').digest('hex');
-      payload.query_hash = queryHash;
-      payload.query_hash_alg = 'SHA512';
+  connect() {
+    if (this.webSocket) {
+      console.log('프라이빗 웹소켓이 이미 연결되어 있습니다.');
+      return;
     }
 
-    const header = {
-      alg: 'HS256',
-      typ: 'JWT',
-    };
-
-    const encodedHeader = this.base64UrlEncode(JSON.stringify(header));
-    const encodedPayload = this.base64UrlEncode(JSON.stringify(payload));
-
-    const message = `${encodedHeader}.${encodedPayload}`;
-    const signature = crypto.createHmac('sha256', this.secretKey).update(message).digest('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-
-    return `${message}.${signature}`;
-  }
-
-  async getAccounts() {
     try {
-      const authToken = await this.generateAuthToken();
+      // 공식 문서 방식: jsonwebtoken 라이브러리 사용
+      const payload = {
+        access_key: this.accessKey,
+        nonce: uuidv4(),
+      };
 
-      const response = await fetch(`${this.serverUrl}/v1/accounts`, {
-        method: 'GET',
+      const jwtToken = jwt.sign(payload, this.secretKey);
+      console.log('🔑 JWT 토큰 생성됨 (jsonwebtoken):', jwtToken.substring(0, 50) + '...');
+
+      // 공식 문서 방식: Authorization 헤더에 토큰 포함
+      this.webSocket = new WebSocket.default('wss://api.upbit.com/websocket/v1/private', {
         headers: {
-          Authorization: `Bearer ${authToken}`,
-          'Content-Type': 'application/json',
-        },
+          authorization: `Bearer ${jwtToken}`
+        }
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      this.webSocket.on('open', () => {
+        console.log('🔒 업비트 프라이빗 웹소켓 연결됨 (공식 방식)');
 
-      return await response.json();
+        // 공식 문서 방식: ticket은 UUID 사용
+        const subscribeMessage = JSON.stringify([
+          { ticket: uuidv4() },
+          { type: 'myAsset' },
+          { format: 'JSON_LIST' }
+        ]);
+
+        console.log('📤 구독 메시지 전송:', subscribeMessage);
+        this.webSocket.send(subscribeMessage);
+      });
+
+      this.webSocket.on('message', (data) => {
+        try {
+          const message = JSON.parse(data.toString());
+          console.log('📥 웹소켓 메시지 수신 (전체):', JSON.stringify(message, null, 2));
+          
+          if (message.type === 'myAsset') {
+            console.log('✅ myAsset 메시지 확인, content:', message.content);
+            this.handleAssetUpdate(message.content);
+          } else {
+            console.log('⚠️ myAsset가 아닌 메시지 타입:', message.type);
+          }
+        } catch (error) {
+          console.error('프라이빗 웹소켓 데이터 파싱 오류:', error);
+          console.log('원본 데이터:', data.toString());
+        }
+      });
+
+      this.webSocket.on('error', (error) => {
+        console.error('🚨 프라이빗 웹소켓 오류:', error);
+      });
+
+      this.webSocket.on('close', (code, reason) => {
+        console.log('🔌 프라이빗 웹소켓 연결 종료:', {
+          code,
+          reason: reason.toString(),
+        });
+        this.webSocket = null;
+
+        // 인증 오류가 아닌 경우에만 재연결 시도
+        if (code !== 1000 && code !== 1003 && code !== 1006) {
+          setTimeout(() => {
+            console.log('🔄 프라이빗 웹소켓 재연결 시도...');
+            this.connect();
+          }, 5000);
+        } else {
+          console.log('❌ 연결 종료. 재연결하지 않습니다.');
+        }
+      });
+
     } catch (error) {
-      console.error('계좌 조회 실패:', error);
-      throw error;
+      console.error('프라이빗 웹소켓 연결 실패:', error);
     }
   }
 
-  async getOrdersChance(market) {
-    try {
-      const query = `market=${market}`;
-      const authToken = await this.generateAuthToken(query);
+  handleAssetUpdate(assetData) {
+    console.log('💰 실시간 자산 정보 업데이트:', {
+      코인: assetData.currency,
+      보유수량: assetData.balance,
+      평균매수가: assetData.avg_buy_price,
+      주문중: assetData.locked,
+      시간: new Date().toLocaleTimeString()
+    });
 
-      const response = await fetch(`${this.serverUrl}/v1/orders/chance?${query}`, {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${authToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
+    // 현재 자산 업데이트
+    const existingIndex = this.currentAssets.findIndex(
+      asset => asset.currency === assetData.currency
+    );
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      return await response.json();
-    } catch (error) {
-      console.error('주문 가능 정보 조회 실패:', error);
-      throw error;
+    if (existingIndex >= 0) {
+      this.currentAssets[existingIndex] = assetData;
+    } else {
+      this.currentAssets.push(assetData);
     }
+
+    // 렌더러 프로세스에 자산 업데이트 전송
+    if (mainWindow) {
+      mainWindow.webContents.send('asset-update', [...this.currentAssets]);
+    }
+  }
+
+  disconnect() {
+    if (this.webSocket) {
+      this.webSocket.close();
+      this.webSocket = null;
+      console.log('프라이빗 웹소켓 수동 연결 해제');
+    }
+  }
+
+  getCurrentAssets() {
+    return [...this.currentAssets];
   }
 }
 
-// IPC 핸들러 등록
-ipcMain.handle('upbit-get-accounts', async (event, { accessKey, secretKey }) => {
+// 전역 프라이빗 웹소켓 인스턴스
+let privateWebSocket = null;
+
+// IPC 핸들러들
+ipcMain.handle('private-websocket-connect', async (event, { accessKey, secretKey }) => {
   try {
-    const upbitAPI = new UpbitAPI(accessKey, secretKey);
-    return await upbitAPI.getAccounts();
+    if (privateWebSocket) {
+      privateWebSocket.disconnect();
+    }
+    
+    privateWebSocket = new UpbitPrivateWebSocket(accessKey, secretKey);
+    privateWebSocket.connect();
+    
+    return { success: true };
   } catch (error) {
-    throw new Error(error.message);
+    console.error('프라이빗 웹소켓 연결 실패:', error);
+    return { success: false, error: error.message };
   }
 });
 
-ipcMain.handle('upbit-get-orders-chance', async (event, { accessKey, secretKey, market }) => {
+ipcMain.handle('private-websocket-disconnect', async () => {
   try {
-    const upbitAPI = new UpbitAPI(accessKey, secretKey);
-    return await upbitAPI.getOrdersChance(market);
+    if (privateWebSocket) {
+      privateWebSocket.disconnect();
+      privateWebSocket = null;
+    }
+    return { success: true };
   } catch (error) {
-    throw new Error(error.message);
+    console.error('프라이빗 웹소켓 해제 실패:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+ipcMain.handle('private-websocket-get-assets', async () => {
+  try {
+    if (privateWebSocket) {
+      return { success: true, assets: privateWebSocket.getCurrentAssets() };
+    }
+    return { success: false, error: 'WebSocket not connected' };
+  } catch (error) {
+    console.error('자산 조회 실패:', error);
+    return { success: false, error: error.message };
   }
 });
