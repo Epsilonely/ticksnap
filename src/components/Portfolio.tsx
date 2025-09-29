@@ -3,6 +3,7 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 import Scrollbar from '../common/Scrollbar';
 import { upbitAccountApi, AccountBalance } from '../services/UpbitAccountApi';
+import { UnifiedCoinData } from '../services/DataManager';
 
 interface PortfolioItem {
   market: string;
@@ -13,12 +14,12 @@ interface PortfolioItem {
 }
 
 function Portfolio() {
-  const { tickers, markets } = useSelector((state: RootState) => state.coin);
+  const { unifiedCoins } = useSelector((state: RootState) => state.coin);
   const [portfolioData, setPortfolioData] = useState<PortfolioItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // 업비트 계좌 정보 가져오기
+  // 업비트 계좌 정보 가져오기 (한 번만 실행)
   useEffect(() => {
     const fetchAccountData = async () => {
       try {
@@ -28,15 +29,14 @@ function Portfolio() {
         const accounts = await upbitAccountApi.getAccounts();
 
         // KRW가 아닌 자산만 필터링하고 잔고가 0이 아닌 것만
-        const cryptoAccounts = accounts.filter((account) => account.currency !== 'KRW' && parseFloat(account.balance) > 0);
+        const cryptoAccounts = accounts.filter((account: AccountBalance) => account.currency !== 'KRW' && parseFloat(account.balance) > 0);
 
-        const portfolioItems: PortfolioItem[] = cryptoAccounts.map((account) => {
+        const portfolioItems: PortfolioItem[] = cryptoAccounts.map((account: AccountBalance) => {
           const market = `KRW-${account.currency}`;
-          const marketInfo = markets.find((m) => m.market === market);
 
           return {
             market,
-            korean_name: marketInfo?.korean_name || account.currency,
+            korean_name: account.currency, // 초기값, 나중에 업데이트
             balance: parseFloat(account.balance),
             avg_buy_price: parseFloat(account.avg_buy_price),
             current_price: 0, // 현재가는 아래에서 업데이트
@@ -52,17 +52,17 @@ function Portfolio() {
       }
     };
 
-    if (markets.length > 0) {
-      fetchAccountData();
-    }
-  }, [markets]);
+    // 컴포넌트 마운트 시 한 번만 실행
+    fetchAccountData();
+  }, []); // 빈 의존성 배열로 한 번만 실행
 
-  // 현재가 정보 업데이트
+  // 현재가 정보 업데이트 및 코인 이름 업데이트
   const portfolioWithCurrentPrice = portfolioData.map((item) => {
-    const ticker = tickers.find((t) => t.market === item.market);
+    const coinInfo = unifiedCoins.find((coin: UnifiedCoinData) => coin.upbit?.symbol === item.market);
     return {
       ...item,
-      current_price: ticker?.trade_price || 0,
+      korean_name: coinInfo?.name || item.korean_name, // 코인 이름 업데이트
+      current_price: coinInfo?.upbit?.price || 0,
     };
   });
 
