@@ -34,22 +34,22 @@ interface SymbolMapping {
 
 export class DataManager {
   private static instance: DataManager | null = null;
-  
+
   // 데이터 저장
   private upbitMarkets: any[] = [];
   private binanceMarkets: any[] = [];
   private coinMapping: Map<string, SymbolMapping> = new Map();
   private unifiedCoins: UnifiedCoinData[] = [];
-  
+
   // 타이머 및 웹소켓 관리
   private restApiInterval: NodeJS.Timeout | null = null;
   private upbitWebSocket: WebSocket | null = null;
   private binanceWebSocket: WebSocket | null = null;
   private favoriteCoins: string[] = [];
-  
+
   // Redux store 참조
   private dispatch: AppDispatch | null = null;
-  
+
   // 초기화 상태
   private isInitialized: boolean = false;
   private isUpdating: boolean = false;
@@ -75,19 +75,18 @@ export class DataManager {
 
     try {
       console.log('DataManager 초기화 시작...');
-      
+
       // 1. 마켓 정보 로드 및 매핑 생성
       await this.initializeMarkets();
-      
+
       // 2. 초기 현재가 데이터 로드
       await this.loadInitialTickers();
-      
+
       // 3. REST API 주기적 업데이트 시작
       this.startRestApiUpdates();
-      
+
       this.isInitialized = true;
       console.log('DataManager 초기화 완료');
-      
     } catch (error) {
       console.error('DataManager 초기화 실패:', error);
       throw error;
@@ -98,21 +97,17 @@ export class DataManager {
   private async initializeMarkets(): Promise<void> {
     try {
       console.log('마켓 정보 로드 중...');
-      
+
       // 업비트와 바이낸스 마켓 정보 동시 가져오기
-      const [upbitMarkets, binanceMarkets] = await Promise.all([
-        fetchUpbitMarkets(),
-        fetchBinanceMarkets()
-      ]);
+      const [upbitMarkets, binanceMarkets] = await Promise.all([fetchUpbitMarkets(), fetchBinanceMarkets()]);
 
       this.upbitMarkets = upbitMarkets;
       this.binanceMarkets = binanceMarkets;
 
       // 동적 매핑 생성
       this.createDynamicMapping();
-      
+
       console.log(`매핑 완료: ${this.coinMapping.size}개 코인`);
-      
     } catch (error) {
       console.error('마켓 정보 로드 실패:', error);
       throw error;
@@ -124,7 +119,7 @@ export class DataManager {
     this.coinMapping.clear();
 
     // 업비트 코인들 처리
-    this.upbitMarkets.forEach(market => {
+    this.upbitMarkets.forEach((market) => {
       const coinSymbol = this.extractCoinSymbol(market.market);
       if (!this.coinMapping.has(coinSymbol)) {
         this.coinMapping.set(coinSymbol, {});
@@ -133,7 +128,7 @@ export class DataManager {
     });
 
     // 바이낸스 코인들 처리
-    this.binanceMarkets.forEach(market => {
+    this.binanceMarkets.forEach((market) => {
       const coinSymbol = this.extractCoinSymbol(market.symbol);
       if (!this.coinMapping.has(coinSymbol)) {
         this.coinMapping.set(coinSymbol, {});
@@ -157,24 +152,23 @@ export class DataManager {
   private async loadInitialTickers(): Promise<void> {
     try {
       console.log('초기 현재가 데이터 로드 중...');
-      
+
       // 업비트 현재가 정보
-      const upbitMarketCodes = this.upbitMarkets.map(market => market.market);
+      const upbitMarketCodes = this.upbitMarkets.map((market) => market.market);
       const upbitTickers = await fetchUpbitTickers(upbitMarketCodes);
 
       // 바이낸스 현재가 정보 (상위 100개만)
-      const binanceSymbols = this.binanceMarkets.slice(0, 100).map(market => market.symbol);
+      const binanceSymbols = this.binanceMarkets.slice(0, 100).map((market) => market.symbol);
       const binanceTickersRaw = await fetchBinanceTickers(binanceSymbols);
       const binanceTickers = binanceTickersRaw.map(convertBinanceTickerToUpbitFormat);
 
       // 통합 데이터 생성
       this.createUnifiedData(upbitTickers, binanceTickers);
-      
+
       // Redux store 업데이트
       this.updateReduxStore();
-      
+
       console.log(`초기 데이터 로드 완료: ${this.unifiedCoins.length}개 코인`);
-      
     } catch (error) {
       console.error('초기 현재가 데이터 로드 실패:', error);
     }
@@ -186,14 +180,14 @@ export class DataManager {
 
     // 각 코인별로 통합 데이터 생성
     this.coinMapping.forEach((mapping, coinSymbol) => {
-      const upbitData = mapping.upbit ? upbitTickers.find(t => t.market === mapping.upbit) : null;
-      const binanceData = mapping.binance ? binanceTickers.find(t => t.market === mapping.binance) : null;
+      const upbitData = mapping.upbit ? upbitTickers.find((t) => t.market === mapping.upbit) : null;
+      const binanceData = mapping.binance ? binanceTickers.find((t) => t.market === mapping.binance) : null;
 
       if (upbitData || binanceData) {
         const unifiedCoin: UnifiedCoinData = {
           coinSymbol,
           name: this.getCoinName(coinSymbol, upbitData, binanceData),
-          maxTradeVolume: 0
+          maxTradeVolume: 0,
         };
 
         // 업비트 데이터 추가
@@ -204,7 +198,7 @@ export class DataManager {
             change: upbitData.change,
             changeRate: upbitData.change_rate,
             changePrice: upbitData.change_price,
-            tradeVolume: upbitData.acc_trade_price_24h || upbitData.acc_trade_price
+            tradeVolume: upbitData.acc_trade_price_24h || upbitData.acc_trade_price,
           };
         }
 
@@ -216,7 +210,7 @@ export class DataManager {
             change: binanceData.change,
             changeRate: binanceData.change_rate,
             changePrice: binanceData.change_price,
-            tradeVolume: binanceData.acc_trade_price_24h || binanceData.acc_trade_price
+            tradeVolume: binanceData.acc_trade_price_24h || binanceData.acc_trade_price,
           };
         }
 
@@ -236,7 +230,7 @@ export class DataManager {
   // 코인 이름 가져오기
   private getCoinName(coinSymbol: string, upbitData?: any, binanceData?: any): string {
     if (upbitData) {
-      const market = this.upbitMarkets.find(m => m.market === upbitData.market);
+      const market = this.upbitMarkets.find((m) => m.market === upbitData.market);
       if (market) return market.korean_name;
     }
     return coinSymbol; // 기본값
@@ -263,20 +257,19 @@ export class DataManager {
   private async updateTickerData(): Promise<void> {
     try {
       // 업비트 현재가 정보
-      const upbitMarketCodes = this.upbitMarkets.map(market => market.market);
+      const upbitMarketCodes = this.upbitMarkets.map((market) => market.market);
       const upbitTickers = await fetchUpbitTickers(upbitMarketCodes);
 
       // 바이낸스 현재가 정보 (상위 100개만)
-      const binanceSymbols = this.binanceMarkets.slice(0, 100).map(market => market.symbol);
+      const binanceSymbols = this.binanceMarkets.slice(0, 100).map((market) => market.symbol);
       const binanceTickersRaw = await fetchBinanceTickers(binanceSymbols);
       const binanceTickers = binanceTickersRaw.map(convertBinanceTickerToUpbitFormat);
 
       // 기존 데이터 업데이트
       this.updateUnifiedData(upbitTickers, binanceTickers);
-      
+
       // Redux store 업데이트
       this.updateReduxStore();
-      
     } catch (error) {
       console.error('현재가 데이터 업데이트 실패:', error);
     }
@@ -284,7 +277,7 @@ export class DataManager {
 
   // 기존 통합 데이터 업데이트 (불변성 유지)
   private updateUnifiedData(upbitTickers: any[], binanceTickers: any[]): void {
-    this.unifiedCoins = this.unifiedCoins.map(coin => {
+    this.unifiedCoins = this.unifiedCoins.map((coin) => {
       const mapping = this.coinMapping.get(coin.coinSymbol);
       if (!mapping) return coin;
 
@@ -292,7 +285,7 @@ export class DataManager {
 
       // 업비트 데이터 업데이트
       if (mapping.upbit) {
-        const upbitData = upbitTickers.find(t => t.market === mapping.upbit);
+        const upbitData = upbitTickers.find((t) => t.market === mapping.upbit);
         if (upbitData && coin.upbit) {
           updatedCoin.upbit = {
             ...coin.upbit,
@@ -300,14 +293,14 @@ export class DataManager {
             change: upbitData.change,
             changeRate: upbitData.change_rate,
             changePrice: upbitData.change_price,
-            tradeVolume: upbitData.acc_trade_price_24h || upbitData.acc_trade_price
+            tradeVolume: upbitData.acc_trade_price_24h || upbitData.acc_trade_price,
           };
         }
       }
 
       // 바이낸스 데이터 업데이트
       if (mapping.binance) {
-        const binanceData = binanceTickers.find(t => t.market === mapping.binance);
+        const binanceData = binanceTickers.find((t) => t.market === mapping.binance);
         if (binanceData && coin.binance) {
           updatedCoin.binance = {
             ...coin.binance,
@@ -315,7 +308,7 @@ export class DataManager {
             change: binanceData.change,
             changeRate: binanceData.change_rate,
             changePrice: binanceData.change_price,
-            tradeVolume: binanceData.acc_trade_price_24h || binanceData.acc_trade_price
+            tradeVolume: binanceData.acc_trade_price_24h || binanceData.acc_trade_price,
           };
         }
       }
@@ -353,7 +346,7 @@ export class DataManager {
     const upbitSymbols: string[] = [];
     const binanceSymbols: string[] = [];
 
-    this.favoriteCoins.forEach(coinSymbol => {
+    this.favoriteCoins.forEach((coinSymbol) => {
       const mapping = this.coinMapping.get(coinSymbol);
       if (mapping?.upbit) upbitSymbols.push(mapping.upbit);
       if (mapping?.binance) binanceSymbols.push(mapping.binance);
@@ -384,8 +377,8 @@ export class DataManager {
         {
           type: 'ticker',
           codes: symbols,
-          isOnlyRealtime: true
-        }
+          isOnlyRealtime: true,
+        },
       ]);
       this.upbitWebSocket?.send(message);
     };
@@ -407,9 +400,9 @@ export class DataManager {
 
   // 바이낸스 웹소켓 연결
   private connectBinanceWebSocket(symbols: string[]): void {
-    const streams = symbols.map(s => `${s.toLowerCase()}@ticker`).join('/');
+    const streams = symbols.map((s) => `${s.toLowerCase()}@ticker`).join('/');
     const wsUrl = `wss://stream.binance.com:9443/ws/${streams}`;
-    
+
     this.binanceWebSocket = new WebSocket(wsUrl);
 
     this.binanceWebSocket.onopen = () => {
@@ -434,21 +427,21 @@ export class DataManager {
   private handleUpbitWebSocketData(data: any): void {
     if (data && data.code) {
       const coinSymbol = this.extractCoinSymbol(data.code);
-      
+
       // 웹소켓 데이터 로그 출력
-      console.log('🔵 업비트 웹소켓 데이터:', {
-        코드: data.code,
-        심볼: coinSymbol,
-        현재가: data.trade_price?.toLocaleString(),
-        변화: data.change,
-        변화율: `${(data.change_rate * 100).toFixed(2)}%`,
-        변화액: data.change_price?.toLocaleString(),
-        거래량: data.acc_trade_price_24h?.toLocaleString(),
-        시간: new Date().toLocaleTimeString()
-      });
-      
+      // console.log('🔵 업비트 웹소켓 데이터:', {
+      //   코드: data.code,
+      //   심볼: coinSymbol,
+      //   현재가: data.trade_price?.toLocaleString(),
+      //   변화: data.change,
+      //   변화율: `${(data.change_rate * 100).toFixed(2)}%`,
+      //   변화액: data.change_price?.toLocaleString(),
+      //   거래량: data.acc_trade_price_24h?.toLocaleString(),
+      //   시간: new Date().toLocaleTimeString()
+      // });
+
       // 불변성을 유지하면서 데이터 업데이트
-      this.unifiedCoins = this.unifiedCoins.map(coin => {
+      this.unifiedCoins = this.unifiedCoins.map((coin) => {
         if (coin.coinSymbol === coinSymbol && coin.upbit) {
           const updatedCoin = {
             ...coin,
@@ -458,21 +451,21 @@ export class DataManager {
               change: data.change,
               changeRate: data.change_rate,
               changePrice: data.change_price,
-              tradeVolume: data.acc_trade_price_24h || data.acc_trade_price
-            }
+              tradeVolume: data.acc_trade_price_24h || data.acc_trade_price,
+            },
           };
-          
+
           // 최대 거래량 재계산
           const upbitVolume = updatedCoin.upbit.tradeVolume || 0;
           const binanceVolume = updatedCoin.binance?.tradeVolume || 0;
           updatedCoin.maxTradeVolume = Math.max(upbitVolume, binanceVolume);
-          
+
           console.log(`✅ ${coinSymbol} 업비트 데이터 업데이트 완료`);
           return updatedCoin;
         }
         return coin;
       });
-      
+
       // Redux 업데이트
       this.updateReduxStore();
     }
@@ -482,24 +475,24 @@ export class DataManager {
   private handleBinanceWebSocketData(data: any): void {
     if (data && data.s) {
       const coinSymbol = this.extractCoinSymbol(data.s);
-      
+
       // 웹소켓 데이터 로그 출력
       const changeRate = parseFloat(data.P) / 100;
       const changePrice = parseFloat(data.p);
-      
-      console.log('🟡 바이낸스 웹소켓 데이터:', {
-        코드: data.s,
-        심볼: coinSymbol,
-        현재가: parseFloat(data.c).toLocaleString(),
-        변화: changePrice > 0 ? 'RISE' : changePrice < 0 ? 'FALL' : 'EVEN',
-        변화율: `${(changeRate * 100).toFixed(2)}%`,
-        변화액: Math.abs(changePrice).toLocaleString(),
-        거래량: parseFloat(data.q).toLocaleString(),
-        시간: new Date().toLocaleTimeString()
-      });
-      
+
+      // console.log('🟡 바이낸스 웹소켓 데이터:', {
+      //   코드: data.s,
+      //   심볼: coinSymbol,
+      //   현재가: parseFloat(data.c).toLocaleString(),
+      //   변화: changePrice > 0 ? 'RISE' : changePrice < 0 ? 'FALL' : 'EVEN',
+      //   변화율: `${(changeRate * 100).toFixed(2)}%`,
+      //   변화액: Math.abs(changePrice).toLocaleString(),
+      //   거래량: parseFloat(data.q).toLocaleString(),
+      //   시간: new Date().toLocaleTimeString(),
+      // });
+
       // 불변성을 유지하면서 데이터 업데이트
-      this.unifiedCoins = this.unifiedCoins.map(coin => {
+      this.unifiedCoins = this.unifiedCoins.map((coin) => {
         if (coin.coinSymbol === coinSymbol && coin.binance) {
           const updatedCoin = {
             ...coin,
@@ -509,21 +502,21 @@ export class DataManager {
               change: changePrice > 0 ? 'RISE' : changePrice < 0 ? 'FALL' : 'EVEN',
               changeRate: Math.abs(changeRate),
               changePrice: Math.abs(changePrice),
-              tradeVolume: parseFloat(data.q)
-            }
+              tradeVolume: parseFloat(data.q),
+            },
           };
-          
+
           // 최대 거래량 재계산
           const upbitVolume = updatedCoin.upbit?.tradeVolume || 0;
           const binanceVolume = updatedCoin.binance.tradeVolume || 0;
           updatedCoin.maxTradeVolume = Math.max(upbitVolume, binanceVolume);
-          
+
           console.log(`✅ ${coinSymbol} 바이낸스 데이터 업데이트 완료`);
           return updatedCoin;
         }
         return coin;
       });
-      
+
       // Redux 업데이트
       this.updateReduxStore();
     }

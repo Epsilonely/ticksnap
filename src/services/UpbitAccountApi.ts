@@ -14,11 +14,14 @@ type AssetUpdateCallback = (assets: AccountBalance[]) => void;
 declare global {
   interface Window {
     privateWebSocketAPI: {
-      connect: (accessKey: string, secretKey: string) => Promise<{success: boolean, error?: string}>;
-      disconnect: () => Promise<{success: boolean, error?: string}>;
-      getCurrentAssets: () => Promise<{success: boolean, assets?: AccountBalance[], error?: string}>;
+      connect: (accessKey: string, secretKey: string) => Promise<{ success: boolean; error?: string }>;
+      disconnect: () => Promise<{ success: boolean; error?: string }>;
+      getCurrentAssets: () => Promise<{ success: boolean; assets?: AccountBalance[]; error?: string }>;
       onAssetUpdate: (callback: (assets: AccountBalance[]) => void) => void;
       offAssetUpdate: (callback: (assets: AccountBalance[]) => void) => void;
+    };
+    upbitAPI: {
+      getAccounts: (accessKey: string, secretKey: string) => Promise<{ success: boolean; accounts?: AccountBalance[]; error?: string }>;
     };
   }
 }
@@ -44,11 +47,11 @@ class UpbitAccountApi {
     try {
       if (window.privateWebSocketAPI) {
         const result = await window.privateWebSocketAPI.connect(this.accessKey, this.secretKey);
-        
+
         if (result.success) {
           console.log('🔒 프라이빗 웹소켓 연결 성공 (IPC)');
           this.isConnected = true;
-          
+
           // 메인 프로세스에서 오는 자산 업데이트 리스너 등록
           window.privateWebSocketAPI.onAssetUpdate(this.handleAssetUpdate.bind(this));
         } else {
@@ -66,9 +69,9 @@ class UpbitAccountApi {
   // 메인 프로세스에서 오는 자산 업데이트 처리
   private handleAssetUpdate(assets: AccountBalance[]): void {
     console.log('📊 Portfolio: 실시간 자산 업데이트 받음 (IPC)', assets);
-    
+
     // 콜백 함수들 호출
-    this.assetUpdateCallbacks.forEach(callback => {
+    this.assetUpdateCallbacks.forEach((callback) => {
       callback([...assets]);
     });
   }
@@ -119,6 +122,26 @@ class UpbitAccountApi {
       }
     } catch (error) {
       console.error('프라이빗 웹소켓 해제 실패:', error);
+    }
+  }
+
+  // REST API로 자산 조회
+  async getAccountsViaREST(): Promise<AccountBalance[]> {
+    try {
+      if (window.upbitAPI) {
+        const result = await window.upbitAPI.getAccounts(this.accessKey, this.secretKey);
+        if (result.success && result.accounts) {
+          console.log('✅ REST API로 자산 조회 성공:', result.accounts.length, '개 항목');
+          return result.accounts;
+        } else {
+          throw new Error(result.error || '자산 조회 실패');
+        }
+      } else {
+        throw new Error('upbitAPI가 사용 불가능합니다.');
+      }
+    } catch (error) {
+      console.error('❌ REST API 자산 조회 실패:', error);
+      return [];
     }
   }
 }

@@ -6,6 +6,9 @@ const crypto = await import('crypto');
 const { v4: uuidv4 } = await import('uuid');
 const WebSocket = await import('ws');
 const jwt = await import('jsonwebtoken');
+const https = await import('https');
+const querystring = await import('querystring');
+const axios = await import('axios');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -79,25 +82,21 @@ class UpbitPrivateWebSocket {
         nonce: uuidv4(),
       };
 
-      const jwtToken = jwt.sign(payload, this.secretKey);
+      const jwtToken = jwt.default.sign(payload, this.secretKey);
       console.log('🔑 JWT 토큰 생성됨 (jsonwebtoken):', jwtToken.substring(0, 50) + '...');
 
       // 공식 문서 방식: Authorization 헤더에 토큰 포함
       this.webSocket = new WebSocket.default('wss://api.upbit.com/websocket/v1/private', {
         headers: {
-          authorization: `Bearer ${jwtToken}`
-        }
+          authorization: `Bearer ${jwtToken}`,
+        },
       });
 
       this.webSocket.on('open', () => {
         console.log('🔒 업비트 프라이빗 웹소켓 연결됨 (공식 방식)');
 
         // 공식 문서 방식: ticket은 UUID 사용
-        const subscribeMessage = JSON.stringify([
-          { ticket: uuidv4() },
-          { type: 'myAsset' },
-          { format: 'JSON_LIST' }
-        ]);
+        const subscribeMessage = JSON.stringify([{ ticket: uuidv4() }, { type: 'myAsset' }, { format: 'JSON_LIST' }]);
 
         console.log('📤 구독 메시지 전송:', subscribeMessage);
         this.webSocket.send(subscribeMessage);
@@ -107,7 +106,7 @@ class UpbitPrivateWebSocket {
         try {
           const message = JSON.parse(data.toString());
           console.log('📥 웹소켓 메시지 수신 (전체):', JSON.stringify(message, null, 2));
-          
+
           if (message.type === 'myAsset') {
             console.log('✅ myAsset 메시지 확인, content:', message.content);
             this.handleAssetUpdate(message.content);
@@ -141,7 +140,6 @@ class UpbitPrivateWebSocket {
           console.log('❌ 연결 종료. 재연결하지 않습니다.');
         }
       });
-
     } catch (error) {
       console.error('프라이빗 웹소켓 연결 실패:', error);
     }
@@ -153,13 +151,11 @@ class UpbitPrivateWebSocket {
       보유수량: assetData.balance,
       평균매수가: assetData.avg_buy_price,
       주문중: assetData.locked,
-      시간: new Date().toLocaleTimeString()
+      시간: new Date().toLocaleTimeString(),
     });
 
     // 현재 자산 업데이트
-    const existingIndex = this.currentAssets.findIndex(
-      asset => asset.currency === assetData.currency
-    );
+    const existingIndex = this.currentAssets.findIndex((asset) => asset.currency === assetData.currency);
 
     if (existingIndex >= 0) {
       this.currentAssets[existingIndex] = assetData;
@@ -195,10 +191,10 @@ ipcMain.handle('private-websocket-connect', async (event, { accessKey, secretKey
     if (privateWebSocket) {
       privateWebSocket.disconnect();
     }
-    
+
     privateWebSocket = new UpbitPrivateWebSocket(accessKey, secretKey);
     privateWebSocket.connect();
-    
+
     return { success: true };
   } catch (error) {
     console.error('프라이빗 웹소켓 연결 실패:', error);
@@ -229,4 +225,124 @@ ipcMain.handle('private-websocket-get-assets', async () => {
     console.error('자산 조회 실패:', error);
     return { success: false, error: error.message };
   }
+});
+
+// REST API로 업비트 자산 조회
+ipcMain.handle('upbit-get-accounts', async (event, { accessKey, secretKey }) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const payload = {
+        access_key: accessKey,
+        nonce: uuidv4(),
+      };
+
+      const jwtToken = jwt.default.sign(payload, secretKey);
+
+      const options = {
+        hostname: 'api.upbit.com',
+        path: '/v1/accounts',
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${jwtToken}`,
+        },
+      };
+
+      const req = https.request(options, (res) => {
+        let data = '';
+
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+
+        res.on('end', () => {
+          try {
+            const accounts = JSON.parse(data);
+            console.log('✅ 업비트 REST API 자산 조회 성공:', accounts.length, '개 항목');
+            resolve({ success: true, accounts });
+          } catch (error) {
+            console.error('❌ 업비트 REST API 응답 파싱 오류:', error);
+            resolve({ success: false, error: error.message });
+          }
+        });
+      });
+
+      req.on('error', (error) => {
+        console.error('❌ 업비트 REST API 요청 오류:', error);
+        resolve({ success: false, error: error.message });
+      });
+
+      req.end();
+    } catch (error) {
+      console.error('❌ 업비트 REST API 자산 조회 실패:', error);
+      resolve({ success: false, error: error.message });
+    }
+  });
+});
+
+// REST API로 바이낸스 자산 조회
+ipcMain.handle('binance-get-accounts', async (event, { apiKey, apiSecret }) => {
+  return new Promise((resolve, reject) => {
+    try {
+      const timestamp = Date.now();
+      const queryString = `timestamp=${timestamp}`;
+
+      // HMAC SHA256 서명 생성
+      const signature = crypto.createHmac('sha256', apiSecret).update(queryString).digest('hex');
+
+      const options = {
+        hostname: 'api.binance.com',
+        path: `/api/v3/account?${queryString}&signature=${signature}`,
+        method: 'GET',
+        headers: {
+          'X-MBX-APIKEY': apiKey,
+        },
+      };
+
+      const req = https.request(options, (res) => {
+        let data = '';
+
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+
+        res.on('end', () => {
+          try {
+            const accountData = JSON.parse(data);
+
+            if (accountData.code) {
+              // 에러 응답
+              console.error('❌ 바이낸스 API 오류:', accountData.msg);
+              resolve({ success: false, error: accountData.msg });
+              return;
+            }
+
+            // balances 배열에서 잔액이 있는 것만 필터링
+            const balances = accountData.balances
+              .filter((balance) => parseFloat(balance.free) > 0 || parseFloat(balance.locked) > 0)
+              .map((balance) => ({
+                asset: balance.asset,
+                free: balance.free,
+                locked: balance.locked,
+              }));
+
+            console.log('✅ 바이낸스 REST API 자산 조회 성공:', balances.length, '개 항목');
+            resolve({ success: true, balances });
+          } catch (error) {
+            console.error('❌ 바이낸스 REST API 응답 파싱 오류:', error);
+            resolve({ success: false, error: error.message });
+          }
+        });
+      });
+
+      req.on('error', (error) => {
+        console.error('❌ 바이낸스 REST API 요청 오류:', error);
+        resolve({ success: false, error: error.message });
+      });
+
+      req.end();
+    } catch (error) {
+      console.error('❌ 바이낸스 REST API 자산 조회 실패:', error);
+      resolve({ success: false, error: error.message });
+    }
+  });
 });
