@@ -19,6 +19,8 @@ function Portfolio() {
   const { unifiedCoins } = useSelector((state: RootState) => state.coin);
   const [upbitPortfolio, setUpbitPortfolio] = useState<PortfolioItem[]>([]);
   const [binancePortfolio, setBinancePortfolio] = useState<PortfolioItem[]>([]);
+  const [upbitKRW, setUpbitKRW] = useState<number>(0);
+  const [binanceUSDT, setBinanceUSDT] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,6 +34,12 @@ function Portfolio() {
         // 업비트 자산 조회
         const upbitAssets = await upbitAccountApi.getAccountsViaREST();
         console.log('📊 Portfolio: 업비트 자산 조회 완료', upbitAssets);
+
+        // 원화 잔액 추출
+        const krwAccount = upbitAssets.find((account) => account.currency === 'KRW');
+        const krwBalance = krwAccount ? parseFloat(krwAccount.balance) : 0;
+        setUpbitKRW(krwBalance);
+        console.log('💰 업비트 원화 잔액:', krwBalance.toLocaleString(), '원');
 
         const upbitItems: PortfolioItem[] = upbitAssets
           .filter((account) => account.currency !== 'KRW' && parseFloat(account.balance) > 0)
@@ -50,12 +58,24 @@ function Portfolio() {
         // 바이낸스 자산 조회
         const binanceAssets = await binanceAccountApi.getAccountsViaREST();
         console.log('📊 Portfolio: 바이낸스 자산 조회 완료', binanceAssets);
+        console.log('📊 Portfolio: 바이낸스 원본 데이터 개수:', binanceAssets.length);
+
+        // USDT 잔액 추출
+        const usdtBalance = binanceAssets.find((balance) => balance.asset === 'USDT');
+        const usdtAmount = usdtBalance ? parseFloat(usdtBalance.free) + parseFloat(usdtBalance.locked) : 0;
+        setBinanceUSDT(usdtAmount);
+        console.log('💰 바이낸스 USDT 잔액:', usdtAmount.toFixed(2), 'USDT');
 
         const binanceItems: PortfolioItem[] = binanceAssets
-          .filter((balance) => balance.asset !== 'USDT' && (parseFloat(balance.free) > 0 || parseFloat(balance.locked) > 0))
+          .filter((balance) => {
+            const hasBalance = parseFloat(balance.free) > 0 || parseFloat(balance.locked) > 0;
+            const isNotUSDT = balance.asset !== 'USDT';
+            console.log(`🔍 바이낸스 필터링: ${balance.asset} - free: ${balance.free}, locked: ${balance.locked}, hasBalance: ${hasBalance}, isNotUSDT: ${isNotUSDT}`);
+            return isNotUSDT && hasBalance;
+          })
           .map((balance: BinanceBalance) => {
             const symbol = `${balance.asset}USDT`;
-            return {
+            const item = {
               market: symbol,
               korean_name: balance.asset,
               balance: parseFloat(balance.free) + parseFloat(balance.locked),
@@ -63,7 +83,12 @@ function Portfolio() {
               current_price: 0,
               exchange: 'binance' as const,
             };
+            console.log('✅ 바이낸스 포트폴리오 아이템 생성:', item);
+            return item;
           });
+
+        console.log('📊 Portfolio: 최종 바이낸스 아이템 개수:', binanceItems.length);
+        console.log('📊 Portfolio: 최종 업비트 아이템 개수:', upbitItems.length);
 
         setUpbitPortfolio(upbitItems);
         setBinancePortfolio(binanceItems);
@@ -118,7 +143,7 @@ function Portfolio() {
 
   // 전체 총 자산 (업비트 KRW + 바이낸스 USDT를 KRW로 환산)
   const usdtToKrw = 1300; // 임시 환율 (실제로는 실시간 환율 API 사용 권장)
-  const totalAssetValue = upbitTotalValue + binanceTotalValue * usdtToKrw;
+  const totalAssetValue = upbitKRW + upbitTotalValue + (binanceUSDT + binanceTotalValue) * usdtToKrw;
   const totalInvestment = upbitTotalInvestment;
   const totalProfitLoss = upbitProfitLoss;
   const totalProfitLossRate = upbitProfitLossRate;
@@ -195,7 +220,7 @@ function Portfolio() {
                     <div key={`upbit-${item.market}`} className="flex px-4 py-3 gap-2 border-b border-[rgba(225,225,225,0.4)] hover:bg-[#F2F2F2]">
                       <div className="min-w-[120px]">
                         <div className="font-semibold text-[#26262C]">{item.korean_name}</div>
-                        <div className="text-xs text-[#4C4C57]">{item.market}</div>
+                        {/* <div className="text-xs text-[#4C4C57]">{item.market}</div> */}
                       </div>
 
                       <div className="min-w-[80px] text-right">

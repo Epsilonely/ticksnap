@@ -279,14 +279,66 @@ ipcMain.handle('upbit-get-accounts', async (event, { accessKey, secretKey }) => 
   });
 });
 
+// 바이낸스 서버 시간 조회 함수
+async function getBinanceServerTime() {
+  return new Promise((resolve, reject) => {
+    const options = {
+      hostname: 'api.binance.com',
+      path: '/api/v3/time',
+      method: 'GET',
+    };
+
+    const req = https.request(options, (res) => {
+      let data = '';
+
+      res.on('data', (chunk) => {
+        data += chunk;
+      });
+
+      res.on('end', () => {
+        try {
+          const timeData = JSON.parse(data);
+          resolve(timeData.serverTime);
+        } catch (error) {
+          reject(error);
+        }
+      });
+    });
+
+    req.on('error', (error) => {
+      reject(error);
+    });
+
+    req.end();
+  });
+}
+
 // REST API로 바이낸스 자산 조회
 ipcMain.handle('binance-get-accounts', async (event, { apiKey, apiSecret }) => {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     try {
-      const timestamp = Date.now();
-      const queryString = `timestamp=${timestamp}`;
+      // 1. 먼저 바이낸스 서버 시간을 조회하여 시간 차이 계산
+      let serverTime;
+      try {
+        serverTime = await getBinanceServerTime();
+        const localTime = Date.now();
+        const timeDiff = localTime - serverTime;
+        console.log('⏰ 시간 동기화:', {
+          로컬시간: localTime,
+          서버시간: serverTime,
+          시간차이: `${timeDiff}ms`,
+        });
+      } catch (error) {
+        console.warn('⚠️ 서버 시간 조회 실패, 로컬 시간 사용:', error.message);
+        serverTime = Date.now();
+      }
 
-      // HMAC SHA256 서명 생성
+      // 2. 서버 시간 기준으로 타임스탬프 생성 (약간의 여유를 두고 -1000ms)
+      const timestamp = serverTime - 1000;
+      const recvWindow = 10000; // 허용 시간 범위를 10초로 설정
+      const queryString = `timestamp=${timestamp}&recvWindow=${recvWindow}`;
+
+      // 3. HMAC SHA256 서명 생성
       const signature = crypto.createHmac('sha256', apiSecret).update(queryString).digest('hex');
 
       const options = {
