@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import UpbitLogo from '../../public/img/UPBIT_LOGO.svg';
 import BinanceLogo from '../../public/img/BINANCE_LOGO.svg';
+import PriceDisplay from '../common/PriceDisplay';
 
 interface ExchangePriceDisplayProps {
   exchange: 'upbit' | 'binance';
@@ -30,7 +31,7 @@ const ExchangePriceDisplay: React.FC<ExchangePriceDisplayProps> = ({ exchange, p
 
         const isUp = price > prevPrice;
         const newAnimationClass = isUp ? 'price-up-animation' : 'price-down-animation';
-        
+
         // 디버깅 로그
         // console.log(`💰 ${coinSymbol}-${exchange} 가격 변동:`, {
         //   이전가격: prevPrice,
@@ -42,7 +43,7 @@ const ExchangePriceDisplay: React.FC<ExchangePriceDisplayProps> = ({ exchange, p
         //   CSS클래스: newAnimationClass === 'price-up-animation' ? '빨간색테두리' : '파란색테두리',
         //   타임스탬프: new Date().toLocaleTimeString()
         // });
-        
+
         // 즉시 애니메이션 적용
         setAnimationClass(newAnimationClass);
 
@@ -109,7 +110,10 @@ const ExchangePriceDisplay: React.FC<ExchangePriceDisplayProps> = ({ exchange, p
           />
         </div>
         <div className="flex gap-1 font-medium text-[14px]">
-          <span className={`min-w-[84px] ${getColorClass(change)} ${animationClass}`}>{price.toLocaleString()}</span>
+          {/* <span className={`min-w-[84px] ${getColorClass(change)} ${animationClass}`}>{price.toLocaleString()}</span> */}
+          <span className={`min-w-[84px] ${animationClass}`}>
+            <PriceDisplay price={price} className={`${getColorClass(change)}`} decimalPlaces={2} />
+          </span>
           <span className={getColorClass(change)}>
             {getChangeIcon(change)}
             {(changeRate * 100).toFixed(2)}%
