@@ -94,6 +94,18 @@ const ExchangePriceDisplay: React.FC<ExchangePriceDisplayProps> = ({ exchange, p
     return exchangeType === 'upbit' ? UpbitLogo : BinanceLogo;
   };
 
+  const getDecimalPlaces = (number: number) => {
+    const integerDigits = Math.floor(number).toString().length;
+    let decimalPlaces = Math.max(0, 9 - integerDigits);
+
+    // 뒤에 0이 있으면 제거
+    const formatted = number.toFixed(decimalPlaces);
+    const trimmed = formatted.replace(/\.?0+$/, '');
+    const actualDecimalPlaces = trimmed.includes('.') ? trimmed.split('.')[1].length : 0;
+
+    return actualDecimalPlaces;
+  };
+
   return (
     <div className="flex items-center">
       <div className="flex items-center gap-1">
@@ -110,9 +122,8 @@ const ExchangePriceDisplay: React.FC<ExchangePriceDisplayProps> = ({ exchange, p
           />
         </div>
         <div className="flex gap-1 font-medium text-[14px]">
-          {/* <span className={`min-w-[84px] ${getColorClass(change)} ${animationClass}`}>{price.toLocaleString()}</span> */}
           <span className={`min-w-[84px] ${animationClass}`}>
-            <PriceDisplay price={price} className={`${getColorClass(change)}`} decimalPlaces={2} />
+            <PriceDisplay price={price} className={`${getColorClass(change)}`} decimalPlaces={getDecimalPlaces(price)} />
           </span>
           <span className={getColorClass(change)}>
             {getChangeIcon(change)}
