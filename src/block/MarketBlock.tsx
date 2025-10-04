@@ -18,7 +18,7 @@ function MarketBlock() {
   // 관심 코인 변경 시 DataManager에 알림
   useEffect(() => {
     // 관심 코인 심볼들을 추출 (코인 심볼로 변환)
-    const favoriteSymbols = favorites.map(fav => {
+    const favoriteSymbols = favorites.map((fav) => {
       // KRW-BTC -> BTC, BTCUSDT -> BTC 형태로 변환
       if (fav.startsWith('KRW-')) {
         return fav.replace('KRW-', '');
@@ -134,59 +134,22 @@ function MarketBlock() {
                   <div className="flex items-center min-w-[154px]">
                     <div className="flex flex-col gap-1">
                       <div className="flex items-center gap-1.5">
-                        <div className="w-[16px] h-[16px] rounded-full overflow-hidden flex-shrink-0">
-                          <img
-                            src={coinIconUrl}
-                            alt={coin.name}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).style.backgroundColor = '#777';
-                              (e.target as HTMLImageElement).style.display = 'block';
-                              (e.target as HTMLImageElement).src = '';
-                            }}
-                          />
+                        <div className={`w-[20px] h-[20px] overflow-hidden ${isFavorite ? 'gradient-outline' : ''}`}>
+                          <img src={coinIconUrl} alt={coin.name} className="w-full h-full object-cover overflow-hidden" />
                         </div>
                         <div className="font-semibold text-[14px] text-[#26262C]">{coin.name}</div>
                       </div>
-                      <div className="flex items-center">
-                        <div className="font-light text-[14px] text-[#4C4C57]">{coin.coinSymbol}</div>
-                        {isFavorite && (
-                          <div
-                            className="ml-1.5 w-[10px] h-[10px] rounded-full"
-                            style={{
-                              background: 'linear-gradient(135deg, #59B3FB 0%, #47EF1D 70%, #FAD0C4 100%)',
-                            }}
-                          />
-                        )}
-                      </div>
+                      <div className="font-normal text-[14px] text-[#4C4C57]">{coin.coinSymbol}</div>
                     </div>
                   </div>
 
                   {/* 가격 정보 */}
                   <div className="flex-1 flex flex-col gap-1">
                     {/* 업비트 가격 */}
-                    {coin.upbit && (
-                      <ExchangePriceDisplay 
-                        key={`${coin.coinSymbol}-upbit`} 
-                        exchange="upbit" 
-                        price={coin.upbit.price} 
-                        change={coin.upbit.change as 'RISE' | 'FALL' | 'EVEN'} 
-                        changeRate={coin.upbit.changeRate} 
-                        coinSymbol={coin.coinSymbol} 
-                      />
-                    )}
+                    {coin.upbit && <ExchangePriceDisplay key={`${coin.coinSymbol}-upbit`} exchange="upbit" price={coin.upbit.price} change={coin.upbit.change as 'RISE' | 'FALL' | 'EVEN'} changeRate={coin.upbit.changeRate} coinSymbol={coin.coinSymbol} />}
 
                     {/* 바인낸스 가격 */}
-                    {coin.binance && (
-                      <ExchangePriceDisplay 
-                        key={`${coin.coinSymbol}-binance`} 
-                        exchange="binance" 
-                        price={coin.binance.price} 
-                        change={coin.binance.change as 'RISE' | 'FALL' | 'EVEN'} 
-                        changeRate={coin.binance.changeRate} 
-                        coinSymbol={coin.coinSymbol} 
-                      />
-                    )}
+                    {coin.binance && <ExchangePriceDisplay key={`${coin.coinSymbol}-binance`} exchange="binance" price={coin.binance.price} change={coin.binance.change as 'RISE' | 'FALL' | 'EVEN'} changeRate={coin.binance.changeRate} coinSymbol={coin.coinSymbol} />}
                   </div>
                 </div>
               );
