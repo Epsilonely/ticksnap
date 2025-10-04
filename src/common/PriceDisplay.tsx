@@ -9,10 +9,10 @@ function PriceDisplay({ price, className = 'text-[#4C4C57]', decimalPlaces = 2 }
   const hasDecimal = parseFloat(`0.${decimalPart}`) > 0;
 
   return (
-    <div className={`${className}`}>
+    <span className={`${className}`}>
       <span>{Number(integerPart).toLocaleString()}</span>
-      {hasDecimal && <span className="[color:color-mix(in_srgb,currentColor,white_40%)]">.{decimalPart}</span>}
-    </div>
+      {hasDecimal && <span className="opacity-60">.{decimalPart}</span>}
+    </span>
   );
 }
 
