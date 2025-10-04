@@ -23,4 +23,5 @@ contextBridge.exposeInMainWorld('upbitAPI', {
 // 바이낸스 REST API
 contextBridge.exposeInMainWorld('binanceAPI', {
   getAccounts: (apiKey, apiSecret) => ipcRenderer.invoke('binance-get-accounts', { apiKey, apiSecret }),
+  getFuturesAccounts: (apiKey, apiSecret) => ipcRenderer.invoke('binance-get-futures-accounts', { apiKey, apiSecret }),
 });

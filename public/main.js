@@ -313,7 +313,7 @@ async function getBinanceServerTime() {
   });
 }
 
-// REST API로 바이낸스 자산 조회
+// REST API로 바이낸스 Spot 자산 조회
 ipcMain.handle('binance-get-accounts', async (event, { apiKey, apiSecret }) => {
   return new Promise(async (resolve, reject) => {
     try {
@@ -363,7 +363,7 @@ ipcMain.handle('binance-get-accounts', async (event, { apiKey, apiSecret }) => {
 
             if (accountData.code) {
               // 에러 응답
-              console.error('❌ 바이낸스 API 오류:', accountData.msg);
+              console.error('❌ 바이낸스 Spot API 오류:', accountData.msg);
               resolve({ success: false, error: accountData.msg });
               return;
             }
@@ -377,23 +377,103 @@ ipcMain.handle('binance-get-accounts', async (event, { apiKey, apiSecret }) => {
                 locked: balance.locked,
               }));
 
-            console.log('✅ 바이낸스 REST API 자산 조회 성공:', balances.length, '개 항목');
+            console.log('✅ 바이낸스 Spot REST API 자산 조회 성공:', balances.length, '개 항목');
             resolve({ success: true, balances });
           } catch (error) {
-            console.error('❌ 바이낸스 REST API 응답 파싱 오류:', error);
+            console.error('❌ 바이낸스 Spot REST API 응답 파싱 오류:', error);
             resolve({ success: false, error: error.message });
           }
         });
       });
 
       req.on('error', (error) => {
-        console.error('❌ 바이낸스 REST API 요청 오류:', error);
+        console.error('❌ 바이낸스 Spot REST API 요청 오류:', error);
         resolve({ success: false, error: error.message });
       });
 
       req.end();
     } catch (error) {
-      console.error('❌ 바이낸스 REST API 자산 조회 실패:', error);
+      console.error('❌ 바이낸스 Spot REST API 자산 조회 실패:', error);
+      resolve({ success: false, error: error.message });
+    }
+  });
+});
+
+// REST API로 바이낸스 Futures 자산 조회
+ipcMain.handle('binance-get-futures-accounts', async (event, { apiKey, apiSecret }) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      // 1. 바이낸스 서버 시간 조회
+      let serverTime;
+      try {
+        serverTime = await getBinanceServerTime();
+      } catch (error) {
+        console.warn('⚠️ 서버 시간 조회 실패, 로컬 시간 사용:', error.message);
+        serverTime = Date.now();
+      }
+
+      // 2. 타임스탬프 생성
+      const timestamp = serverTime - 1000;
+      const recvWindow = 10000;
+      const queryString = `timestamp=${timestamp}&recvWindow=${recvWindow}`;
+
+      // 3. HMAC SHA256 서명 생성
+      const signature = crypto.createHmac('sha256', apiSecret).update(queryString).digest('hex');
+
+      const options = {
+        hostname: 'fapi.binance.com',
+        path: `/fapi/v2/account?${queryString}&signature=${signature}`,
+        method: 'GET',
+        headers: {
+          'X-MBX-APIKEY': apiKey,
+        },
+      };
+
+      const req = https.request(options, (res) => {
+        let data = '';
+
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+
+        res.on('end', () => {
+          try {
+            const accountData = JSON.parse(data);
+
+            if (accountData.code) {
+              console.error('❌ 바이낸스 Futures API 오류:', accountData.msg);
+              resolve({ success: false, error: accountData.msg });
+              return;
+            }
+
+            // assets 배열에서 잔액이 있는 것만 필터링
+            const balances = accountData.assets
+              .filter((asset) => parseFloat(asset.availableBalance) > 0 || parseFloat(asset.walletBalance) > 0)
+              .map((asset) => ({
+                asset: asset.asset,
+                free: asset.availableBalance,
+                locked: (parseFloat(asset.walletBalance) - parseFloat(asset.availableBalance)).toString(),
+                walletBalance: asset.walletBalance,
+                unrealizedProfit: asset.unrealizedProfit,
+              }));
+
+            console.log('✅ 바이낸스 Futures REST API 자산 조회 성공:', balances.length, '개 항목');
+            resolve({ success: true, balances });
+          } catch (error) {
+            console.error('❌ 바이낸스 Futures REST API 응답 파싱 오류:', error);
+            resolve({ success: false, error: error.message });
+          }
+        });
+      });
+
+      req.on('error', (error) => {
+        console.error('❌ 바이낸스 Futures REST API 요청 오류:', error);
+        resolve({ success: false, error: error.message });
+      });
+
+      req.end();
+    } catch (error) {
+      console.error('❌ 바이낸스 Futures REST API 자산 조회 실패:', error);
       resolve({ success: false, error: error.message });
     }
   });

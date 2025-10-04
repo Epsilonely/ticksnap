@@ -3,8 +3,11 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../store';
 import Scrollbar from '../common/Scrollbar';
 import { upbitAccountApi, AccountBalance } from '../services/UpbitAccountApi';
-import { binanceAccountApi, BinanceBalance } from '../services/BinanceAccountApi';
+import { binanceAccountApi, BinanceBalance, BinanceFuturesBalance } from '../services/BinanceAccountApi';
 import { UnifiedCoinData } from '../services/DataManager';
+import UpbitSvg from '../../public/img/UPBIT_SVG.svg';
+import BinanceSvg from '../../public/img/BINANCE_SVG.svg';
+import PriceDisplay from '../common/PriceDisplay';
 
 interface PortfolioItem {
   market: string;
@@ -12,15 +15,18 @@ interface PortfolioItem {
   balance: number;
   avg_buy_price: number;
   current_price: number;
-  exchange: 'upbit' | 'binance';
+  exchange: 'upbit' | 'binance' | 'binance-futures';
+  unrealizedProfit?: number;
 }
 
 function Portfolio() {
   const { unifiedCoins } = useSelector((state: RootState) => state.coin);
   const [upbitPortfolio, setUpbitPortfolio] = useState<PortfolioItem[]>([]);
-  const [binancePortfolio, setBinancePortfolio] = useState<PortfolioItem[]>([]);
+  const [binanceSpotPortfolio, setBinanceSpotPortfolio] = useState<PortfolioItem[]>([]);
+  const [binanceFuturesPortfolio, setBinanceFuturesPortfolio] = useState<PortfolioItem[]>([]);
   const [upbitKRW, setUpbitKRW] = useState<number>(0);
-  const [binanceUSDT, setBinanceUSDT] = useState<number>(0);
+  const [binanceSpotUSDT, setBinanceSpotUSDT] = useState<number>(0);
+  const [binanceFuturesUSDT, setBinanceFuturesUSDT] = useState<number>(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -60,13 +66,13 @@ function Portfolio() {
         console.log('📊 Portfolio: 바이낸스 자산 조회 완료', binanceAssets);
         console.log('📊 Portfolio: 바이낸스 원본 데이터 개수:', binanceAssets.length);
 
-        // USDT 잔액 추출
-        const usdtBalance = binanceAssets.find((balance) => balance.asset === 'USDT');
-        const usdtAmount = usdtBalance ? parseFloat(usdtBalance.free) + parseFloat(usdtBalance.locked) : 0;
-        setBinanceUSDT(usdtAmount);
-        console.log('💰 바이낸스 USDT 잔액:', usdtAmount.toFixed(2), 'USDT');
+        // Spot USDT 잔액 추출
+        const spotUsdtBalance = binanceAssets.find((balance) => balance.asset === 'USDT');
+        const spotUsdtAmount = spotUsdtBalance ? parseFloat(spotUsdtBalance.free) + parseFloat(spotUsdtBalance.locked) : 0;
+        setBinanceSpotUSDT(spotUsdtAmount);
+        console.log('💰 바이낸스 Spot USDT 잔액:', spotUsdtAmount.toFixed(2), 'USDT');
 
-        const binanceItems: PortfolioItem[] = binanceAssets
+        const binanceSpotItems: PortfolioItem[] = binanceAssets
           .filter((balance) => {
             const hasBalance = parseFloat(balance.free) > 0 || parseFloat(balance.locked) > 0;
             const isNotUSDT = balance.asset !== 'USDT';
@@ -87,11 +93,42 @@ function Portfolio() {
             return item;
           });
 
-        console.log('📊 Portfolio: 최종 바이낸스 아이템 개수:', binanceItems.length);
+        // 바이낸스 Futures 자산 조회
+        const binanceFuturesAssets = await binanceAccountApi.getFuturesAccountsViaREST();
+        console.log('📊 Portfolio: 바이낸스 Futures 자산 조회 완료', binanceFuturesAssets);
+
+        // Futures USDT 잔액 추출
+        const futuresUsdtBalance = binanceFuturesAssets.find((balance) => balance.asset === 'USDT');
+        const futuresUsdtAmount = futuresUsdtBalance ? parseFloat(futuresUsdtBalance.walletBalance || '0') : 0;
+        setBinanceFuturesUSDT(futuresUsdtAmount);
+        console.log('💰 바이낸스 Futures USDT 잔액:', futuresUsdtAmount.toFixed(2), 'USDT');
+
+        const binanceFuturesItems: PortfolioItem[] = binanceFuturesAssets
+          .filter((balance) => {
+            const hasBalance = parseFloat(balance.walletBalance || '0') > 0;
+            const isNotUSDT = balance.asset !== 'USDT';
+            return isNotUSDT && hasBalance;
+          })
+          .map((balance: BinanceFuturesBalance) => {
+            const symbol = `${balance.asset}USDT`;
+            return {
+              market: symbol,
+              korean_name: balance.asset,
+              balance: parseFloat(balance.walletBalance || '0'),
+              avg_buy_price: 0,
+              current_price: 0,
+              exchange: 'binance-futures' as const,
+              unrealizedProfit: parseFloat(balance.unrealizedProfit || '0'),
+            };
+          });
+
+        console.log('📊 Portfolio: 최종 바이낸스 Spot 아이템 개수:', binanceSpotItems.length);
+        console.log('📊 Portfolio: 최종 바이낸스 Futures 아이템 개수:', binanceFuturesItems.length);
         console.log('📊 Portfolio: 최종 업비트 아이템 개수:', upbitItems.length);
 
         setUpbitPortfolio(upbitItems);
-        setBinancePortfolio(binanceItems);
+        setBinanceSpotPortfolio(binanceSpotItems);
+        setBinanceFuturesPortfolio(binanceFuturesItems);
         setLoading(false);
       } catch (error) {
         console.error('자산 조회 실패:', error);
@@ -122,8 +159,18 @@ function Portfolio() {
     };
   });
 
-  // 바이낸스 현재가 정보 업데이트
-  const binanceWithCurrentPrice = binancePortfolio.map((item) => {
+  // 바이낸스 Spot 현재가 정보 업데이트
+  const binanceSpotWithCurrentPrice = binanceSpotPortfolio.map((item) => {
+    const coinInfo = unifiedCoins.find((coin: UnifiedCoinData) => coin.binance?.symbol === item.market);
+    return {
+      ...item,
+      korean_name: coinInfo?.name || item.korean_name,
+      current_price: coinInfo?.binance?.price || 0,
+    };
+  });
+
+  // 바이낸스 Futures 현재가 정보 업데이트
+  const binanceFuturesWithCurrentPrice = binanceFuturesPortfolio.map((item) => {
     const coinInfo = unifiedCoins.find((coin: UnifiedCoinData) => coin.binance?.symbol === item.market);
     return {
       ...item,
@@ -138,12 +185,18 @@ function Portfolio() {
   const upbitProfitLoss = upbitTotalValue - upbitTotalInvestment;
   const upbitProfitLossRate = upbitTotalInvestment > 0 ? (upbitProfitLoss / upbitTotalInvestment) * 100 : 0;
 
-  // 바이낸스 총 자산 계산 (USDT 기준)
-  const binanceTotalValue = binanceWithCurrentPrice.reduce((total, item) => total + item.balance * item.current_price, 0);
+  // 바이낸스 Spot 총 자산 계산 (USDT 기준)
+  const binanceSpotTotalValue = binanceSpotWithCurrentPrice.reduce((total, item) => total + item.balance * item.current_price, 0);
+
+  // 바이낸스 Futures 총 자산 계산 (USDT 기준)
+  const binanceFuturesTotalValue = binanceFuturesWithCurrentPrice.reduce((total, item) => total + item.balance * item.current_price, 0);
+  const binanceFuturesTotalUnrealizedProfit = binanceFuturesWithCurrentPrice.reduce((total, item) => total + (item.unrealizedProfit || 0), 0);
+
+  // USDT/KRW 환율 가져오기 (unifiedCoins에서 USDT 정보 추출)
+  const usdtCoin = unifiedCoins.find((coin: UnifiedCoinData) => coin.coinSymbol === 'USDT');
+  const usdtToKrw = usdtCoin?.upbit?.price || 0; // 업비트 USDT 현재가
 
   // 전체 총 자산 (업비트 KRW + 바이낸스 USDT를 KRW로 환산)
-  const usdtToKrw = 1300; // 임시 환율 (실제로는 실시간 환율 API 사용 권장)
-  const totalAssetValue = upbitKRW + upbitTotalValue + (binanceUSDT + binanceTotalValue) * usdtToKrw;
   const totalInvestment = upbitTotalInvestment;
   const totalProfitLoss = upbitProfitLoss;
   const totalProfitLossRate = upbitProfitLossRate;
@@ -151,13 +204,45 @@ function Portfolio() {
   return (
     <div className="h-full bg-white">
       {/* 총 자산 요약 */}
-      <div className="p-4 bg-[#f8f9fa] border-b border-[#e9ecef]">
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <div>
-            <div className="text-sm text-gray-600">총 자산</div>
-            <div className="text-lg font-bold text-[#333]">{Math.floor(totalAssetValue).toLocaleString()}원</div>
+      <div>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="flex flex-col p-4 gap-1">
+            <div className="text-sm text-[#26262C]">총 보유</div>
+            {/* upbit */}
+            <div className="flex gap-1 items-center">
+              <div className="w-[18px] h-[18px] overflow-hidden mt-0.5">
+                <img src={UpbitSvg} alt="upbit_svg" className="w-full h-full object-cover" />
+              </div>
+              <div className="flex text-base items-center leading-[1.2]">
+                <PriceDisplay price={upbitKRW + upbitTotalValue} className="font-['Righteous'] text-[#26262C]" decimalPlaces={3} />
+              </div>
+            </div>
+            {/* binance spot */}
+            <div className="flex gap-1 items-center">
+              <div className="w-[18px] h-[18px] overflow-hidden mt-0.5">
+                <img src={BinanceSvg} alt="binance_svg" className="w-full h-full object-cover" />
+              </div>
+              <div className="flex text-base items-center leading-[1.2]">
+                <span className="text-xs text-[#888] mr-1">Spot</span>
+                <PriceDisplay price={binanceSpotUSDT + binanceSpotTotalValue} className="font-['Righteous'] text-[#26262C]" decimalPlaces={6} />
+              </div>
+            </div>
+            {/* binance futures */}
+            <div className="flex gap-1 items-center">
+              <div className="w-[18px] h-[18px] overflow-hidden mt-0.5">
+                <img src={BinanceSvg} alt="binance_svg" className="w-full h-full object-cover" />
+              </div>
+              <div className="flex text-base items-center leading-[1.2]">
+                <span className="text-xs text-[#888] mr-1">Futures</span>
+                <PriceDisplay price={binanceFuturesUSDT + binanceFuturesTotalValue} className="font-['Righteous'] text-[#26262C]" decimalPlaces={6} />
+              </div>
+            </div>
+            <div className=" flex text-sm text-[#CCCCCC] font-['Pretendard']">
+              ≈
+              <PriceDisplay price={(binanceSpotUSDT + binanceSpotTotalValue + binanceFuturesUSDT + binanceFuturesTotalValue) * usdtToKrw} className="text-[#CCCCCC]" decimalPlaces={6} />
+            </div>
           </div>
-          <div>
+          <div className="bg-amber-400">
             <div className="text-sm text-gray-600">총 투자금</div>
             <div className="text-lg font-bold text-[#333]">{Math.floor(totalInvestment).toLocaleString()}원</div>
           </div>
@@ -201,7 +286,7 @@ function Portfolio() {
               <div className="text-sm">{error}</div>
             </div>
           </div>
-        ) : upbitWithCurrentPrice.length === 0 && binanceWithCurrentPrice.length === 0 ? (
+        ) : upbitWithCurrentPrice.length === 0 && binanceSpotWithCurrentPrice.length === 0 && binanceFuturesWithCurrentPrice.length === 0 ? (
           <div className="flex items-center justify-center h-32 text-gray-500">보유 중인 자산이 없습니다.</div>
         ) : (
           <>
@@ -255,15 +340,15 @@ function Portfolio() {
               </>
             )}
 
-            {/* 바이낸스 자산 */}
-            {binanceWithCurrentPrice.length > 0 && (
+            {/* 바이낸스 Spot 자산 */}
+            {binanceSpotWithCurrentPrice.length > 0 && (
               <>
-                <div className="bg-[#f0f0f0] px-4 py-2 font-semibold text-sm text-[#333] sticky top-0">바이낸스 (Binance) - {binanceWithCurrentPrice.length}개 자산</div>
-                {binanceWithCurrentPrice.map((item) => {
+                <div className="bg-[#f0f0f0] px-4 py-2 font-semibold text-sm text-[#333] sticky top-0">바이낸스 Spot (Binance Spot) - {binanceSpotWithCurrentPrice.length}개 자산</div>
+                {binanceSpotWithCurrentPrice.map((item) => {
                   const evaluationAmount = item.balance * item.current_price;
 
                   return (
-                    <div key={`binance-${item.market}`} className="flex px-4 py-3 gap-2 border-b border-[rgba(225,225,225,0.4)] hover:bg-[#F2F2F2]">
+                    <div key={`binance-spot-${item.market}`} className="flex px-4 py-3 gap-2 border-b border-[rgba(225,225,225,0.4)] hover:bg-[#F2F2F2]">
                       <div className="min-w-[120px]">
                         <div className="font-semibold text-[#26262C]">{item.korean_name}</div>
                         <div className="text-xs text-[#4C4C57]">{item.market}</div>
@@ -287,6 +372,56 @@ function Portfolio() {
 
                       <div className="min-w-[100px] text-right text-gray-400">
                         <div className="font-medium text-sm">-</div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </>
+            )}
+
+            {/* 바이낸스 Futures 자산 */}
+            {binanceFuturesWithCurrentPrice.length > 0 && (
+              <>
+                <div className="bg-[#f0f0f0] px-4 py-2 font-semibold text-sm text-[#333] sticky top-0">
+                  바이낸스 Futures (Binance Futures) - {binanceFuturesWithCurrentPrice.length}개 자산
+                  <span className="ml-2 text-xs text-[#666]">
+                    (미실현 손익: {binanceFuturesTotalUnrealizedProfit >= 0 ? '+' : ''}
+                    {binanceFuturesTotalUnrealizedProfit.toFixed(2)} USDT)
+                  </span>
+                </div>
+                {binanceFuturesWithCurrentPrice.map((item) => {
+                  const evaluationAmount = item.balance * item.current_price;
+                  const unrealizedProfit = item.unrealizedProfit || 0;
+                  const profitColor = unrealizedProfit >= 0 ? 'text-[#F84F71]' : 'text-[#3578FF]';
+
+                  return (
+                    <div key={`binance-futures-${item.market}`} className="flex px-4 py-3 gap-2 border-b border-[rgba(225,225,225,0.4)] hover:bg-[#F2F2F2]">
+                      <div className="min-w-[120px]">
+                        <div className="font-semibold text-[#26262C]">{item.korean_name}</div>
+                        <div className="text-xs text-[#4C4C57]">{item.market}</div>
+                      </div>
+
+                      <div className="min-w-[80px] text-right">
+                        <div className="font-medium">{item.balance.toFixed(4)}</div>
+                      </div>
+
+                      <div className="min-w-[100px] text-right">
+                        <div className="font-medium text-gray-400">-</div>
+                      </div>
+
+                      <div className="min-w-[100px] text-right">
+                        <div className="font-medium">{item.current_price.toFixed(2)} USDT</div>
+                      </div>
+
+                      <div className="min-w-[100px] text-right">
+                        <div className="font-bold">{evaluationAmount.toFixed(2)} USDT</div>
+                      </div>
+
+                      <div className={`min-w-[100px] text-right ${profitColor}`}>
+                        <div className="font-bold text-sm">
+                          미실현: {unrealizedProfit >= 0 ? '+' : ''}
+                          {unrealizedProfit.toFixed(2)} USDT
+                        </div>
                       </div>
                     </div>
                   );
