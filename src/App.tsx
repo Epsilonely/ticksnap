@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Provider } from 'react-redux';
 import { store } from './store';
+import { dataManager } from './services/DataManager';
 import Block, { BlockType } from './block/Block';
 import Portfolio from './components/Portfolio';
 
@@ -8,17 +9,64 @@ type MiddleTabType = 'exchange' | 'investment';
 
 function App() {
   const [activeMiddleTab, setActiveMiddleTab] = useState<MiddleTabType>('exchange');
+
+  // DataManager 초기화
+  useEffect(() => {
+    const initializeDataManager = async () => {
+      try {
+        // Redux dispatch 설정
+        dataManager.setDispatch(store.dispatch);
+        
+        // DataManager 초기화
+        await dataManager.initialize();
+        
+        // localStorage에서 기존 관심 코인 불러와서 웹소켓 연결
+        const storedFavorites = localStorage.getItem('favorites');
+        if (storedFavorites) {
+          const favorites = JSON.parse(storedFavorites);
+          console.log('기존 관심 코인 복원:', favorites);
+          
+          // 관심 코인 심볼들을 추출 (코인 심볼로 변환)
+          const favoriteSymbols = favorites.map((fav: string) => {
+            // KRW-BTC -> BTC, BTCUSDT -> BTC 형태로 변환
+            if (fav.startsWith('KRW-')) {
+              return fav.replace('KRW-', '');
+            }
+            if (fav.endsWith('USDT')) {
+              return fav.replace('USDT', '');
+            }
+            return fav;
+          });
+          
+          // DataManager에 관심 코인 전달하여 웹소켓 연결
+          dataManager.updateFavoriteCoins(favoriteSymbols);
+        }
+        
+        console.log('앱 초기화 완료');
+      } catch (error) {
+        console.error('앱 초기화 실패:', error);
+      }
+    };
+
+    initializeDataManager();
+
+    // 컴포넌트 언마운트 시 정리
+    return () => {
+      dataManager.destroy();
+    };
+  }, []);
+
   return (
     <Provider store={store}>
-      <div className="flex justify-center w-full h-screen bg-[#CCCCCC]">
-        <div className="flex gap-2 sm:gap-2 lg:gap-4 md:max-w-[1024px] lg:max-w-[1128px] xl:max-w-[1980px] 2xl:max-w-[2400px] w-full mx-auto h-full p-2 sm:p-4 lg:p-6">
-          {/* 왼쪽 사이드바 - 전체 너비의 약 30% - 마켓 블록 */}
-          <div className="min-w-[380px]">
+      <div className="flex justify-center w-full h-screen bg-[#f1f1f1]">
+        <div className="flex gap-2 md:max-w-[1024px] lg:max-w-[1128px] xl:max-w-[1980px] 2xl:max-w-[2400px] w-full mx-auto h-full p-2 sm:p-1 lg:p-2">
+          {/* 왼쪽 사이드바 - 마켓 블록 */}
+          <div className="min-w-[380px] border-[1px] border-[#ffffff]">
             <Block type={BlockType.BLOCK_TY_MARKET} />
           </div>
 
-          <div className="flex-1 grid grid-rows-[1fr_auto_1fr] gap-4 sm:gap-6 lg:gap-8">
-            {/* 상단 행: 오른쪽 블록 (5/12) */}
+          <div className="flex-1 grid grid-rows-[1fr_auto_1fr] gap-2">
+            {/* 상단 행 */}
             <div>
               <Block type={BlockType.BLOCK_TY_ALARM_HISTORY} />
             </div>

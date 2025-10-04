@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import UpbitLogo from '../../public/img/UPBIT_LOGO.svg';
 import BinanceLogo from '../../public/img/BINANCE_LOGO.svg';
+import PriceDisplay from '../common/PriceDisplay';
 
 interface ExchangePriceDisplayProps {
   exchange: 'upbit' | 'binance';
@@ -13,6 +14,7 @@ interface ExchangePriceDisplayProps {
 const ExchangePriceDisplay: React.FC<ExchangePriceDisplayProps> = ({ exchange, price, change, changeRate, coinSymbol }) => {
   const [animationClass, setAnimationClass] = useState<string>('');
   const prevPriceRef = useRef<number | null>(null);
+  const animationTimerRef = useRef<NodeJS.Timeout | null>(null);
   const uniqueKey = `${coinSymbol}-${exchange}`; // 고유 키 생성
 
   // 가격 변동 감지 및 애니메이션 처리
@@ -21,24 +23,50 @@ const ExchangePriceDisplay: React.FC<ExchangePriceDisplayProps> = ({ exchange, p
       const prevPrice = prevPriceRef.current;
 
       if (Math.abs(price - prevPrice) > 0.00001) {
-        // 미세한 변동 무시
-        if (price > prevPrice) {
-          setAnimationClass('price-up-animation');
-        } else if (price < prevPrice) {
-          setAnimationClass('price-down-animation');
+        // 기존 애니메이션 타이머 정리
+        if (animationTimerRef.current) {
+          clearTimeout(animationTimerRef.current);
+          animationTimerRef.current = null;
         }
 
-        // 애니메이션 제거
-        const timer = setTimeout(() => {
-          setAnimationClass('');
-        }, 250); // 0.25초 후 애니메이션 클래스 제거
+        const isUp = price > prevPrice;
+        const newAnimationClass = isUp ? 'price-up-animation' : 'price-down-animation';
 
-        return () => clearTimeout(timer);
+        // 디버깅 로그
+        // console.log(`💰 ${coinSymbol}-${exchange} 가격 변동:`, {
+        //   이전가격: prevPrice,
+        //   현재가격: price,
+        //   차이: (price - prevPrice).toFixed(8),
+        //   방향: isUp ? '상승' : '하락',
+        //   애니메이션: newAnimationClass,
+        //   전날대비: change,
+        //   CSS클래스: newAnimationClass === 'price-up-animation' ? '빨간색테두리' : '파란색테두리',
+        //   타임스탬프: new Date().toLocaleTimeString()
+        // });
+
+        // 즉시 애니메이션 적용
+        setAnimationClass(newAnimationClass);
+
+        // 새로운 타이머 설정
+        animationTimerRef.current = setTimeout(() => {
+          setAnimationClass('');
+          animationTimerRef.current = null;
+        }, 500); // 0.5초로 늘려서 더 명확하게 보이도록
       }
     }
 
     prevPriceRef.current = price;
-  }, [price, uniqueKey]); // uniqueKey 의존성 추가
+  }, [price, uniqueKey, coinSymbol, exchange, change]); // 디버깅을 위한 의존성 추가
+
+  // 컴포넌트 언마운트 시 타이머 정리
+  useEffect(() => {
+    return () => {
+      if (animationTimerRef.current) {
+        clearTimeout(animationTimerRef.current);
+        animationTimerRef.current = null;
+      }
+    };
+  }, []);
 
   const getColorClass = (changeType: 'RISE' | 'FALL' | 'EVEN') => {
     switch (changeType) {
@@ -66,6 +94,18 @@ const ExchangePriceDisplay: React.FC<ExchangePriceDisplayProps> = ({ exchange, p
     return exchangeType === 'upbit' ? UpbitLogo : BinanceLogo;
   };
 
+  const getDecimalPlaces = (number: number) => {
+    const integerDigits = Math.floor(number).toString().length;
+    let decimalPlaces = Math.max(0, 9 - integerDigits);
+
+    // 뒤에 0이 있으면 제거
+    const formatted = number.toFixed(decimalPlaces);
+    const trimmed = formatted.replace(/\.?0+$/, '');
+    const actualDecimalPlaces = trimmed.includes('.') ? trimmed.split('.')[1].length : 0;
+
+    return actualDecimalPlaces;
+  };
+
   return (
     <div className="flex items-center">
       <div className="flex items-center gap-1">
@@ -82,7 +122,9 @@ const ExchangePriceDisplay: React.FC<ExchangePriceDisplayProps> = ({ exchange, p
           />
         </div>
         <div className="flex gap-1 font-medium text-[14px]">
-          <span className={`min-w-[84px] ${getColorClass(change)} ${animationClass}`}>{price.toLocaleString()}</span>
+          <span className={`min-w-[84px] ${animationClass}`}>
+            <PriceDisplay price={price} className={`${getColorClass(change)}`} decimalPlaces={getDecimalPlaces(price)} />
+          </span>
           <span className={getColorClass(change)}>
             {getChangeIcon(change)}
             {(changeRate * 100).toFixed(2)}%

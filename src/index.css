@@ -1,9 +1,18 @@
 @import 'tailwindcss';
 
+@font-face {
+  font-family: 'Pretendard';
+  src: url('../public/fonts/PretendardVariable.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Righteous';
+  src: url('../public/fonts/righteous-v18-latin-regular.woff2') format('woff2');
+}
+
 body {
   margin: 0;
-  font-family: 'Pretendard Variable';
-  line-height: 1.4;
+  font-family: 'Pretendard';
   letter-spacing: -0.025em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -13,17 +22,17 @@ body {
 }
 
 :root {
-  --color-rise: #f84f71;
-  --color-fall: #4c4c57;
+  --color-rise: #2ebd85;
+  --color-fall: #f6465d;
   --color-unchanged: #333333;
 }
 
 @keyframes price-up-pulse {
   0% {
-    outline-color: #f84f71; /* 즉시 빨간색 표시 */
+    outline-color: #2ebd85; /* 즉시 빨간색 표시 */
   }
   80% {
-    outline-color: #f84f71; /* 대부분의 시간 동안 빨간색 유지 */
+    outline-color: #2ebd85; /* 대부분의 시간 동안 빨간색 유지 */
   }
   100% {
     outline-color: rgba(241, 41, 90, 0); /* 마지막에 한번에 사라짐 */
@@ -32,10 +41,10 @@ body {
 
 @keyframes price-down-pulse {
   0% {
-    outline-color: #60a5fa; /* 즉시 파란색 표시 */
+    outline-color: #f6465d; /* 즉시 파란색 표시 */
   }
   80% {
-    outline-color: #60a5fa; /* 대부분의 시간 동안 파란색 유지 */
+    outline-color: #f6465d; /* 대부분의 시간 동안 파란색 유지 */
   }
   100% {
     outline-color: rgba(63, 81, 181, 0); /* 마지막에 한번에 사라짐 */
@@ -43,13 +52,13 @@ body {
 }
 
 .price-up-animation {
-  animation: price-up-pulse 0.5s ease-out;
+  animation: price-up-pulse 0.25s ease-in-out;
   outline: 1px solid transparent;
   outline-offset: -2px; /* outline이 요소 경계에 딱 맞도록 설정 */
 }
 
 .price-down-animation {
-  animation: price-down-pulse 0.5s ease-out;
+  animation: price-down-pulse 0.25s ease-in-out;
   outline: 1px solid transparent;
   outline-offset: -2px;
 }
