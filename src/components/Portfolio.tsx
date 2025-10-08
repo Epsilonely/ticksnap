@@ -9,6 +9,8 @@ import UpbitSvg from '../../public/img/UPBIT_SVG.svg';
 import BinanceSvg from '../../public/img/BINANCE_SVG.svg';
 import PriceDisplay from '../common/PriceDisplay';
 
+const SVG_SIZE_CLASS = 'size-[22px]';
+
 interface PortfolioItem {
   market: string;
   korean_name: string;
@@ -192,6 +194,8 @@ function Portfolio() {
   const binanceFuturesTotalValue = binanceFuturesWithCurrentPrice.reduce((total, item) => total + item.balance * item.current_price, 0);
   const binanceFuturesTotalUnrealizedProfit = binanceFuturesWithCurrentPrice.reduce((total, item) => total + (item.unrealizedProfit || 0), 0);
 
+  const binanceTotalValue = binanceSpotUSDT + binanceSpotTotalValue + binanceFuturesUSDT + binanceFuturesTotalValue;
+
   // USDT/KRW 환율 가져오기 (unifiedCoins에서 USDT 정보 추출)
   const usdtCoin = unifiedCoins.find((coin: UnifiedCoinData) => coin.coinSymbol === 'USDT');
   const usdtToKrw = usdtCoin?.upbit?.price || 0; // 업비트 USDT 현재가
@@ -202,44 +206,47 @@ function Portfolio() {
   const totalProfitLossRate = upbitProfitLossRate;
 
   return (
-    <div className="h-full bg-white">
+    <div className="h-full bg-white tracking-normal">
       {/* 총 자산 요약 */}
       <div>
         <div className="grid grid-cols-3 gap-4">
-          <div className="flex flex-col p-4 gap-1">
-            <div className="text-sm text-[#26262C]">총 보유</div>
+          <div className="flex flex-col p-4 gap-2 bg-[#0F0F0F]">
+            <div className="text-[12px] text-[#CCCCCC] font-light">Total Assets</div>
             {/* upbit */}
-            <div className="flex gap-1 items-center">
-              <div className="w-[18px] h-[18px] overflow-hidden mt-0.5">
+            <div className="flex gap-2 items-center">
+              <div className={`${SVG_SIZE_CLASS} overflow-hidden`}>
                 <img src={UpbitSvg} alt="upbit_svg" className="w-full h-full object-cover" />
               </div>
-              <div className="flex text-base items-center leading-[1.2]">
-                <PriceDisplay price={upbitKRW + upbitTotalValue} className="font-['Righteous'] text-[#26262C]" decimalPlaces={3} />
+              <div className="flex text-[24px] font-medium items-center leading-[1] font-['Pretendard'] text-[#f5f5f5]">
+                <PriceDisplay price={upbitKRW + upbitTotalValue} className="" decimalPlaces={3} />
               </div>
             </div>
-            {/* binance spot */}
-            <div className="flex gap-1 items-center">
-              <div className="w-[18px] h-[18px] overflow-hidden mt-0.5">
-                <img src={BinanceSvg} alt="binance_svg" className="w-full h-full object-cover" />
+            {/* binance all */}
+            <div className="flex flex-col">
+              <div className="flex gap-2 items-center">
+                <div className={`${SVG_SIZE_CLASS} overflow-hidden`}>
+                  <img src={BinanceSvg} alt="binance_svg" className="w-full h-full object-cover" />
+                </div>
+                <div className="flex text-[24px] font-medium items-center leading-[1] font-['Pretendard'] text-[#F5F5F5]">
+                  <PriceDisplay price={binanceTotalValue} className="" decimalPlaces={6} />
+                </div>
               </div>
-              <div className="flex text-base items-center leading-[1.2]">
-                <span className="text-xs text-[#888] mr-1">Spot</span>
-                <PriceDisplay price={binanceSpotUSDT + binanceSpotTotalValue} className="font-['Righteous'] text-[#26262C]" decimalPlaces={6} />
-              </div>
-            </div>
-            {/* binance futures */}
-            <div className="flex gap-1 items-center">
-              <div className="w-[18px] h-[18px] overflow-hidden mt-0.5">
-                <img src={BinanceSvg} alt="binance_svg" className="w-full h-full object-cover" />
-              </div>
-              <div className="flex text-base items-center leading-[1.2]">
-                <span className="text-xs text-[#888] mr-1">Futures</span>
-                <PriceDisplay price={binanceFuturesUSDT + binanceFuturesTotalValue} className="font-['Righteous'] text-[#26262C]" decimalPlaces={6} />
+              <div className="flex text-sm ml-[32px] font-['Pretendard'] text-[#8BA3D4]">
+                ≈
+                <PriceDisplay price={binanceTotalValue * usdtToKrw} className="" decimalPlaces={6} />
               </div>
             </div>
-            <div className=" flex text-sm text-[#CCCCCC] font-['Pretendard']">
-              ≈
-              <PriceDisplay price={(binanceSpotUSDT + binanceSpotTotalValue + binanceFuturesUSDT + binanceFuturesTotalValue) * usdtToKrw} className="text-[#CCCCCC]" decimalPlaces={6} />
+            <div className="flex w-full">
+              {/* binance spot */}
+              <div className="flex flex-1 flex-col font-['Pretendard']">
+                <span className="text-[12px] text-[#cccccc] font-light">Spot</span>
+                <PriceDisplay price={binanceSpotUSDT + binanceSpotTotalValue} className="font-medium text-[#F5F5F5]" decimalPlaces={6} />
+              </div>
+              {/* binance futures */}
+              <div className="flex flex-1 flex-col font-['Pretendard']">
+                <span className="text-[12px] text-[#cccccc] font-light">USDⓈ-M Futures</span>
+                <PriceDisplay price={binanceFuturesUSDT + binanceFuturesTotalValue} className="font-medium text-[#F5F5F5]" decimalPlaces={6} />
+              </div>
             </div>
           </div>
           <div className="bg-amber-400">
