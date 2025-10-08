@@ -281,6 +281,14 @@ export class DataManager {
       const mapping = this.coinMapping.get(coin.coinSymbol);
       if (!mapping) return coin;
 
+      // 관심 코인이고 웹소켓이 연결되어 있으면 REST API 업데이트 스킵
+      const isFavorite = this.favoriteCoins.includes(coin.coinSymbol);
+      const hasWebSocket = this.upbitWebSocket?.readyState === WebSocket.OPEN || this.binanceWebSocket?.readyState === WebSocket.OPEN;
+
+      if (isFavorite && hasWebSocket) {
+        return coin; // 웹소켓이 실시간 업데이트하므로 스킵
+      }
+
       const updatedCoin = { ...coin };
 
       // 업비트 데이터 업데이트
@@ -396,22 +404,33 @@ export class DataManager {
     this.upbitWebSocket.onerror = (error) => {
       console.error('업비트 웹소켓 오류:', error);
     };
+
+    this.upbitWebSocket.onclose = () => {
+      console.log('업비트 웹소켓 연결 종료, 5초 후 재연결 시도...');
+      setTimeout(() => {
+        if (this.favoriteCoins.length > 0) {
+          this.connectUpbitWebSocket(symbols);
+        }
+      }, 5000);
+    };
   }
 
-  // 바이낸스 웹소켓 연결
+  // 바이낸스 웹소켓 연결 (멀티 스트림 방식)
   private connectBinanceWebSocket(symbols: string[]): void {
     const streams = symbols.map((s) => `${s.toLowerCase()}@ticker`).join('/');
-    const wsUrl = `wss://stream.binance.com:9443/ws/${streams}`;
+    const wsUrl = `wss://stream.binance.com:9443/stream?streams=${streams}`;
 
     this.binanceWebSocket = new WebSocket(wsUrl);
 
     this.binanceWebSocket.onopen = () => {
-      console.log('바이낸스 웹소켓 연결됨');
+      console.log('바이낸스 웹소켓 연결됨 (멀티 스트림)');
     };
 
     this.binanceWebSocket.onmessage = (event) => {
       try {
-        const data = JSON.parse(event.data);
+        const response = JSON.parse(event.data);
+        // 멀티 스트림 응답 형식: { stream: "btcusdt@ticker", data: {...} }
+        const data = response.data || response;
         this.handleBinanceWebSocketData(data);
       } catch (error) {
         console.error('바이낸스 웹소켓 데이터 파싱 오류:', error);
@@ -421,104 +440,100 @@ export class DataManager {
     this.binanceWebSocket.onerror = (error) => {
       console.error('바이낸스 웹소켓 오류:', error);
     };
+
+    this.binanceWebSocket.onclose = () => {
+      console.log('바이낸스 웹소켓 연결 종료, 5초 후 재연결 시도...');
+      setTimeout(() => {
+        if (this.favoriteCoins.length > 0) {
+          this.connectBinanceWebSocket(symbols);
+        }
+      }, 5000);
+    };
   }
 
-  // 업비트 웹소켓 데이터 처리
+  // 업비트 웹소켓 데이터 처리 (최적화: 해당 코인만 업데이트)
   private handleUpbitWebSocketData(data: any): void {
     if (data && data.code) {
       const coinSymbol = this.extractCoinSymbol(data.code);
 
-      // 웹소켓 데이터 로그 출력
-      // console.log('🔵 업비트 웹소켓 데이터:', {
-      //   코드: data.code,
-      //   심볼: coinSymbol,
-      //   현재가: data.trade_price?.toLocaleString(),
-      //   변화: data.change,
-      //   변화율: `${(data.change_rate * 100).toFixed(2)}%`,
-      //   변화액: data.change_price?.toLocaleString(),
-      //   거래량: data.acc_trade_price_24h?.toLocaleString(),
-      //   시간: new Date().toLocaleTimeString()
-      // });
+      // 해당 코인의 인덱스 찾기
+      const coinIndex = this.unifiedCoins.findIndex((coin) => coin.coinSymbol === coinSymbol);
 
-      // 불변성을 유지하면서 데이터 업데이트
-      this.unifiedCoins = this.unifiedCoins.map((coin) => {
-        if (coin.coinSymbol === coinSymbol && coin.upbit) {
-          const updatedCoin = {
-            ...coin,
-            upbit: {
-              ...coin.upbit,
-              price: data.trade_price,
-              change: data.change,
-              changeRate: data.change_rate,
-              changePrice: data.change_price,
-              tradeVolume: data.acc_trade_price_24h || data.acc_trade_price,
-            },
-          };
+      if (coinIndex !== -1 && this.unifiedCoins[coinIndex].upbit) {
+        const coin = this.unifiedCoins[coinIndex];
+        const upbitData = coin.upbit;
 
-          // 최대 거래량 재계산
-          const upbitVolume = updatedCoin.upbit.tradeVolume || 0;
-          const binanceVolume = updatedCoin.binance?.tradeVolume || 0;
-          updatedCoin.maxTradeVolume = Math.max(upbitVolume, binanceVolume);
+        if (!upbitData) return;
 
-          console.log(`✅ ${coinSymbol} 업비트 데이터 업데이트 완료`);
-          return updatedCoin;
-        }
-        return coin;
-      });
+        // 새로운 배열 생성 (불변성 유지하되, 해당 코인만 업데이트)
+        const updatedCoins = [...this.unifiedCoins];
 
-      // Redux 업데이트
-      this.updateReduxStore();
+        updatedCoins[coinIndex] = {
+          ...coin,
+          upbit: {
+            symbol: upbitData.symbol,
+            price: data.trade_price,
+            change: data.change,
+            changeRate: data.change_rate,
+            changePrice: data.change_price,
+            tradeVolume: data.acc_trade_price_24h || data.acc_trade_price,
+          },
+        };
+
+        // 최대 거래량 재계산
+        const upbitVolume = updatedCoins[coinIndex].upbit!.tradeVolume || 0;
+        const binanceVolume = updatedCoins[coinIndex].binance?.tradeVolume || 0;
+        updatedCoins[coinIndex].maxTradeVolume = Math.max(upbitVolume, binanceVolume);
+
+        this.unifiedCoins = updatedCoins;
+
+        // Redux 업데이트
+        this.updateReduxStore();
+      }
     }
   }
 
-  // 바이낸스 웹소켓 데이터 처리
+  // 바이낸스 웹소켓 데이터 처리 (최적화: 해당 코인만 업데이트)
   private handleBinanceWebSocketData(data: any): void {
     if (data && data.s) {
       const coinSymbol = this.extractCoinSymbol(data.s);
-
-      // 웹소켓 데이터 로그 출력
       const changeRate = parseFloat(data.P) / 100;
       const changePrice = parseFloat(data.p);
 
-      // console.log('🟡 바이낸스 웹소켓 데이터:', {
-      //   코드: data.s,
-      //   심볼: coinSymbol,
-      //   현재가: parseFloat(data.c).toLocaleString(),
-      //   변화: changePrice > 0 ? 'RISE' : changePrice < 0 ? 'FALL' : 'EVEN',
-      //   변화율: `${(changeRate * 100).toFixed(2)}%`,
-      //   변화액: Math.abs(changePrice).toLocaleString(),
-      //   거래량: parseFloat(data.q).toLocaleString(),
-      //   시간: new Date().toLocaleTimeString(),
-      // });
+      // 해당 코인의 인덱스 찾기
+      const coinIndex = this.unifiedCoins.findIndex((coin) => coin.coinSymbol === coinSymbol);
 
-      // 불변성을 유지하면서 데이터 업데이트
-      this.unifiedCoins = this.unifiedCoins.map((coin) => {
-        if (coin.coinSymbol === coinSymbol && coin.binance) {
-          const updatedCoin = {
-            ...coin,
-            binance: {
-              ...coin.binance,
-              price: parseFloat(data.c),
-              change: changePrice > 0 ? 'RISE' : changePrice < 0 ? 'FALL' : 'EVEN',
-              changeRate: Math.abs(changeRate),
-              changePrice: Math.abs(changePrice),
-              tradeVolume: parseFloat(data.q),
-            },
-          };
+      if (coinIndex !== -1 && this.unifiedCoins[coinIndex].binance) {
+        const coin = this.unifiedCoins[coinIndex];
+        const binanceData = coin.binance;
 
-          // 최대 거래량 재계산
-          const upbitVolume = updatedCoin.upbit?.tradeVolume || 0;
-          const binanceVolume = updatedCoin.binance.tradeVolume || 0;
-          updatedCoin.maxTradeVolume = Math.max(upbitVolume, binanceVolume);
+        if (!binanceData) return;
 
-          console.log(`✅ ${coinSymbol} 바이낸스 데이터 업데이트 완료`);
-          return updatedCoin;
-        }
-        return coin;
-      });
+        // 새로운 배열 생성 (불변성 유지하되, 해당 코인만 업데이트)
+        const updatedCoins = [...this.unifiedCoins];
 
-      // Redux 업데이트
-      this.updateReduxStore();
+        updatedCoins[coinIndex] = {
+          ...coin,
+          binance: {
+            symbol: binanceData.symbol,
+            price: parseFloat(data.c),
+            change: changePrice > 0 ? 'RISE' : changePrice < 0 ? 'FALL' : 'EVEN',
+            changeRate: Math.abs(changeRate),
+            changePrice: Math.abs(changePrice),
+            tradeVolume: parseFloat(data.q),
+          },
+        };
+
+        // 최대 거래량 재계산
+        const upbitVolume = updatedCoins[coinIndex].upbit?.tradeVolume || 0;
+        const binanceVolume = updatedCoins[coinIndex].binance!.tradeVolume || 0;
+        updatedCoins[coinIndex].maxTradeVolume = Math.max(upbitVolume, binanceVolume);
+
+        this.unifiedCoins = updatedCoins;
+
+        // Redux 업데이트
+        this.updateReduxStore();
+      }
     }
   }
 

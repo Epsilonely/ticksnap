@@ -51,7 +51,7 @@ const ExchangePriceDisplay: React.FC<ExchangePriceDisplayProps> = ({ exchange, p
         animationTimerRef.current = setTimeout(() => {
           setAnimationClass('');
           animationTimerRef.current = null;
-        }, 500); // 0.5초로 늘려서 더 명확하게 보이도록
+        }, 250);
       }
     }
 
