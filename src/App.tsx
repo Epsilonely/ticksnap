@@ -5,7 +5,7 @@ import { dataManager } from './services/DataManager';
 import Block, { BlockType } from './block/Block';
 import Portfolio from './components/Portfolio';
 
-type MiddleTabType = 'exchange' | 'investment';
+type MiddleTabType = 'exchange' | 'investment' | 'leaderboard';
 
 function App() {
   const [activeMiddleTab, setActiveMiddleTab] = useState<MiddleTabType>('exchange');
@@ -16,16 +16,16 @@ function App() {
       try {
         // Redux dispatch 설정
         dataManager.setDispatch(store.dispatch);
-        
+
         // DataManager 초기화
         await dataManager.initialize();
-        
+
         // localStorage에서 기존 관심 코인 불러와서 웹소켓 연결
         const storedFavorites = localStorage.getItem('favorites');
         if (storedFavorites) {
           const favorites = JSON.parse(storedFavorites);
           console.log('기존 관심 코인 복원:', favorites);
-          
+
           // 관심 코인 심볼들을 추출 (코인 심볼로 변환)
           const favoriteSymbols = favorites.map((fav: string) => {
             // KRW-BTC -> BTC, BTCUSDT -> BTC 형태로 변환
@@ -37,11 +37,11 @@ function App() {
             }
             return fav;
           });
-          
+
           // DataManager에 관심 코인 전달하여 웹소켓 연결
           dataManager.updateFavoriteCoins(favoriteSymbols);
         }
-        
+
         console.log('앱 초기화 완료');
       } catch (error) {
         console.error('앱 초기화 실패:', error);
@@ -80,6 +80,9 @@ function App() {
                 </button>
                 <button className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${activeMiddleTab === 'investment' ? 'bg-white text-[#333] border-b-2 border-[#007bff]' : 'text-[#666] hover:text-[#333] hover:bg-[#f1f3f4]'}`} onClick={() => setActiveMiddleTab('investment')}>
                   투자내역
+                </button>
+                <button className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${activeMiddleTab === 'leaderboard' ? 'bg-white text-[#333] border-b-2 border-[#007bff]' : 'text-[#666] hover:text-[#333] hover:bg-[#f1f3f4]'}`} onClick={() => setActiveMiddleTab('leaderboard')}>
+                  리더보드
                 </button>
               </div>
 
