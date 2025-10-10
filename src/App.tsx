@@ -3,7 +3,6 @@ import { Provider } from 'react-redux';
 import { store } from './store';
 import { dataManager } from './services/DataManager';
 import Block, { BlockType } from './block/Block';
-import Portfolio from './components/Portfolio';
 
 type MiddleTabType = 'exchange' | 'investment' | 'leaderboard';
 
@@ -61,7 +60,7 @@ function App() {
       <div className="flex justify-center w-full h-screen bg-[#f1f1f1]">
         <div className="flex gap-2 md:max-w-[1024px] lg:max-w-[1128px] xl:max-w-[1980px] 2xl:max-w-[2400px] w-full mx-auto h-full p-2 sm:p-1 lg:p-2">
           {/* 왼쪽 사이드바 - 마켓 블록 */}
-          <div className="min-w-[380px] border-[1px] border-[#ffffff]">
+          <div className="min-w-[380px]">
             <Block type={BlockType.BLOCK_TY_MARKET} />
           </div>
 
@@ -74,20 +73,33 @@ function App() {
             {/* 중간 행: 탭이 있는 블록 */}
             <div className="min-h-[680px] max-h-[680px] bg-white rounded-lg overflow-hidden">
               {/* 탭 헤더 */}
-              <div className="flex bg-[#f8f9fa] border-b border-[#e9ecef]">
-                <button className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${activeMiddleTab === 'exchange' ? 'bg-white text-[#333] border-b-2 border-[#007bff]' : 'text-[#666] hover:text-[#333] hover:bg-[#f1f3f4]'}`} onClick={() => setActiveMiddleTab('exchange')}>
-                  거래소
+              <div className="flex bg-[#f8f9fa] font-bold border-b border-[#e9ecef]">
+                <button className={`flex-1 px-6 py-3 text-sm transition-colors ${activeMiddleTab === 'exchange' ? 'bg-white text-[#333] border-b-2 border-[#007bff]' : 'text-[#666] hover:text-[#333] hover:bg-[#f1f3f4]'}`} onClick={() => setActiveMiddleTab('exchange')}>
+                  Trader
                 </button>
-                <button className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${activeMiddleTab === 'investment' ? 'bg-white text-[#333] border-b-2 border-[#007bff]' : 'text-[#666] hover:text-[#333] hover:bg-[#f1f3f4]'}`} onClick={() => setActiveMiddleTab('investment')}>
-                  투자내역
+                <button className={`flex-1 px-6 py-3 text-sm transition-colors ${activeMiddleTab === 'investment' ? 'bg-white text-[#333] border-b-2 border-[#007bff]' : 'text-[#666] hover:text-[#333] hover:bg-[#f1f3f4]'}`} onClick={() => setActiveMiddleTab('investment')}>
+                  Assets
                 </button>
-                <button className={`flex-1 px-6 py-3 text-sm font-medium transition-colors ${activeMiddleTab === 'leaderboard' ? 'bg-white text-[#333] border-b-2 border-[#007bff]' : 'text-[#666] hover:text-[#333] hover:bg-[#f1f3f4]'}`} onClick={() => setActiveMiddleTab('leaderboard')}>
-                  리더보드
+                <button className={`flex-1 px-6 py-3 text-sm transition-colors ${activeMiddleTab === 'leaderboard' ? 'bg-white text-[#333] border-b-2 border-[#007bff]' : 'text-[#666] hover:text-[#333] hover:bg-[#f1f3f4]'}`} onClick={() => setActiveMiddleTab('leaderboard')}>
+                  Leaderboard
                 </button>
               </div>
 
               {/* 탭 컨텐츠 */}
-              <div className="h-[calc(100%-52px)]">{activeMiddleTab === 'exchange' ? <Block type={BlockType.BLOCK_TY_COIN_DETAIL} /> : <Portfolio />}</div>
+              <div className="h-[calc(100%-52px)]">
+                {(() => {
+                  switch (activeMiddleTab) {
+                    case 'exchange':
+                      return <Block type={BlockType.BLOCK_TY_COIN_DETAIL} />;
+                    case 'investment':
+                      return <Block type={BlockType.BLOCK_TY_PORTFOLIO} />;
+                    case 'leaderboard':
+                      return <Block type={BlockType.BLOCK_TY_LEADERBOARD} />;
+                    default:
+                      return <Block type={BlockType.BLOCK_TY_COIN_DETAIL} />;
+                  }
+                })()}
+              </div>
             </div>
 
             {/* 하단 행: 전체 너비 블록 */}
