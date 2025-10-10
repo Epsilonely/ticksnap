@@ -7,8 +7,7 @@ const { v4: uuidv4 } = await import('uuid');
 const WebSocket = await import('ws');
 const jwt = await import('jsonwebtoken');
 const https = await import('https');
-const querystring = await import('querystring');
-const axios = await import('axios');
+const { BinanceLoginService } = await import('../src/services/BinanceLoginService.js');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -184,6 +183,9 @@ class UpbitPrivateWebSocket {
 
 // 전역 프라이빗 웹소켓 인스턴스
 let privateWebSocket = null;
+
+// 바이낸스 로그인 서비스 인스턴스
+let binanceLoginService = null;
 
 // IPC 핸들러들
 ipcMain.handle('private-websocket-connect', async (event, { accessKey, secretKey }) => {
@@ -397,6 +399,71 @@ ipcMain.handle('binance-get-accounts', async (event, { apiKey, apiSecret }) => {
       resolve({ success: false, error: error.message });
     }
   });
+});
+
+// 바이낸스 로그인 핸들러
+ipcMain.handle('binance-login', async () => {
+  try {
+    console.log('🔐 바이낸스 로그인 시작...');
+
+    if (!binanceLoginService) {
+      binanceLoginService = new BinanceLoginService();
+    }
+
+    const result = await binanceLoginService.loginManual();
+
+    if (result.success) {
+      console.log('✅ 바이낸스 로그인 성공');
+    } else {
+      console.error('❌ 바이낸스 로그인 실패:', result.error);
+    }
+
+    return result;
+  } catch (error) {
+    console.error('❌ 바이낸스 로그인 오류:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// 바이낸스 로그인 상태 확인
+ipcMain.handle('binance-is-logged-in', async () => {
+  try {
+    console.log('🔍 로그인 상태 확인 중...');
+    console.log('   - binanceLoginService 존재:', !!binanceLoginService);
+
+    if (!binanceLoginService) {
+      console.log('   - 결과: 서비스 인스턴스 없음');
+      return { success: true, isLoggedIn: false };
+    }
+
+    const isLoggedIn = binanceLoginService.isLoggedIn();
+    const cookies = binanceLoginService.getCookies();
+    const csrfToken = binanceLoginService.getCsrfToken();
+    const bncUuid = binanceLoginService.getBncUuid();
+
+    console.log('   - 쿠키 개수:', cookies.length);
+    console.log('   - CSRF Token:', csrfToken ? '있음' : '없음');
+    console.log('   - BNC-UUID:', bncUuid ? '있음' : '없음');
+    console.log('   - isLoggedIn 결과:', isLoggedIn);
+
+    return { success: true, isLoggedIn };
+  } catch (error) {
+    console.error('❌ 로그인 상태 확인 오류:', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// 바이낸스 브라우저 강제 종료
+ipcMain.handle('binance-close-browser', async () => {
+  try {
+    if (binanceLoginService) {
+      await binanceLoginService.close();
+    }
+    return { success: true };
+  } catch (error) {
+    console.error('❌ 브라우저 종료 오류:', error);
+    return { success: false, error: error.message };
+  }
 });
 
 // REST API로 바이낸스 Futures 자산 조회

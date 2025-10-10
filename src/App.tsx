@@ -57,7 +57,7 @@ function App() {
 
   return (
     <Provider store={store}>
-      <div className="flex justify-center w-full h-screen bg-[#f1f1f1]">
+      <div className="flex justify-center w-full h-screen bg-[#F5F5F5]">
         <div className="flex gap-2 md:max-w-[1024px] lg:max-w-[1128px] xl:max-w-[1980px] 2xl:max-w-[2400px] w-full mx-auto h-full p-2 sm:p-1 lg:p-2">
           {/* 왼쪽 사이드바 - 마켓 블록 */}
           <div className="min-w-[380px]">
@@ -71,16 +71,16 @@ function App() {
             </div>
 
             {/* 중간 행: 탭이 있는 블록 */}
-            <div className="min-h-[680px] max-h-[680px] bg-white rounded-lg overflow-hidden">
+            <div className="min-h-[680px] max-h-[1000px] overflow-hidden">
               {/* 탭 헤더 */}
-              <div className="flex bg-[#f8f9fa] font-bold border-b border-[#e9ecef]">
-                <button className={`flex-1 px-6 py-3 text-sm transition-colors ${activeMiddleTab === 'exchange' ? 'bg-white text-[#333] border-b-2 border-[#007bff]' : 'text-[#666] hover:text-[#333] hover:bg-[#f1f3f4]'}`} onClick={() => setActiveMiddleTab('exchange')}>
+              <div className="flex bg-[#F5F5F5] font-semibold rounded-2xl mb-2">
+                <button className={`flex-1 m-1 px-6 py-2 text-base transition-colors rounded-xl ${activeMiddleTab === 'exchange' ? 'bg-white text-[#212833]' : 'text-[#999999] hover:text-[#FFFFFF] hover:bg-[#999999]'}`} onClick={() => setActiveMiddleTab('exchange')}>
                   Trader
                 </button>
-                <button className={`flex-1 px-6 py-3 text-sm transition-colors ${activeMiddleTab === 'investment' ? 'bg-white text-[#333] border-b-2 border-[#007bff]' : 'text-[#666] hover:text-[#333] hover:bg-[#f1f3f4]'}`} onClick={() => setActiveMiddleTab('investment')}>
+                <button className={`flex-1 m-1 px-6 py-2 text-base  transition-colors rounded-xl ${activeMiddleTab === 'investment' ? 'bg-white text-[#212833]' : 'text-[#999999] hover:text-[#FFFFFF] hover:bg-[#999999]'}`} onClick={() => setActiveMiddleTab('investment')}>
                   Assets
                 </button>
-                <button className={`flex-1 px-6 py-3 text-sm transition-colors ${activeMiddleTab === 'leaderboard' ? 'bg-white text-[#333] border-b-2 border-[#007bff]' : 'text-[#666] hover:text-[#333] hover:bg-[#f1f3f4]'}`} onClick={() => setActiveMiddleTab('leaderboard')}>
+                <button className={`flex-1 m-1 px-6 py-2 text-base transition-colors rounded-xl ${activeMiddleTab === 'leaderboard' ? 'bg-white text-[#212833]' : 'text-[#999999] hover:text-[#FFFFFF] hover:bg-[#999999]'}`} onClick={() => setActiveMiddleTab('leaderboard')}>
                   Leaderboard
                 </button>
               </div>

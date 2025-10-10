@@ -25,3 +25,10 @@ contextBridge.exposeInMainWorld('binanceAPI', {
   getAccounts: (apiKey, apiSecret) => ipcRenderer.invoke('binance-get-accounts', { apiKey, apiSecret }),
   getFuturesAccounts: (apiKey, apiSecret) => ipcRenderer.invoke('binance-get-futures-accounts', { apiKey, apiSecret }),
 });
+
+// 바이낸스 로그인 API
+contextBridge.exposeInMainWorld('binanceLoginAPI', {
+  login: () => ipcRenderer.invoke('binance-login'),
+  isLoggedIn: () => ipcRenderer.invoke('binance-is-logged-in'),
+  closeBrowser: () => ipcRenderer.invoke('binance-close-browser'),
+});
