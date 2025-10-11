@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain } = await import('electron');
+const { app, BrowserWindow, BrowserView, ipcMain } = await import('electron');
 const path = await import('path');
 const { fileURLToPath } = await import('url');
 const isDev = await import('electron-is-dev');
@@ -7,7 +7,6 @@ const { v4: uuidv4 } = await import('uuid');
 const WebSocket = await import('ws');
 const jwt = await import('jsonwebtoken');
 const https = await import('https');
-const { BinanceLoginService } = await import('../src/services/BinanceLoginService.js');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -184,8 +183,8 @@ class UpbitPrivateWebSocket {
 // 전역 프라이빗 웹소켓 인스턴스
 let privateWebSocket = null;
 
-// 바이낸스 로그인 서비스 인스턴스
-let binanceLoginService = null;
+// 바이낸스 로그인 상태
+let loginCookies = [];
 
 // IPC 핸들러들
 ipcMain.handle('private-websocket-connect', async (event, { accessKey, secretKey }) => {
@@ -401,49 +400,219 @@ ipcMain.handle('binance-get-accounts', async (event, { apiKey, apiSecret }) => {
   });
 });
 
-// 바이낸스 로그인 핸들러
-ipcMain.handle('binance-login', async () => {
-  try {
-    console.log('🔐 바이낸스 로그인 시작...');
+// 바이낸스 QR 로그인 - Precheck
+ipcMain.handle('binance-qr-precheck', async () => {
+  return new Promise((resolve) => {
+    try {
+      console.log('🔐 바이낸스 QR Precheck 시작...');
 
-    if (!binanceLoginService) {
-      binanceLoginService = new BinanceLoginService();
+      const postData = JSON.stringify({ bizType: 'qrcode_login' });
+
+      const options = {
+        hostname: 'accounts.binance.com',
+        path: '/bapi/accounts/v1/public/account/security/request/precheck',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(postData),
+        },
+      };
+
+      const req = https.request(options, (res) => {
+        let data = '';
+
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+
+        res.on('end', () => {
+          try {
+            const result = JSON.parse(data);
+            console.log('✅ Precheck 성공:', result);
+            resolve({ success: true, data: result.data });
+          } catch (error) {
+            console.error('❌ Precheck 응답 파싱 오류:', error);
+            resolve({ success: false, error: error.message });
+          }
+        });
+      });
+
+      req.on('error', (error) => {
+        console.error('❌ Precheck 요청 오류:', error);
+        resolve({ success: false, error: error.message });
+      });
+
+      req.write(postData);
+      req.end();
+    } catch (error) {
+      console.error('❌ Precheck 실패:', error);
+      resolve({ success: false, error: error.message });
     }
+  });
+});
 
-    const result = await binanceLoginService.loginManual();
+// 바이낸스 QR 로그인 - Check Result
+ipcMain.handle('binance-qr-check-result', async (event, { sessionId }) => {
+  return new Promise((resolve) => {
+    try {
+      console.log('🔍 Check Result 시작...');
 
-    if (result.success) {
-      console.log('✅ 바이낸스 로그인 성공');
-    } else {
-      console.error('❌ 바이낸스 로그인 실패:', result.error);
+      const postData = JSON.stringify({
+        sessionId,
+        validateCodeType: 'random',
+      });
+
+      const options = {
+        hostname: 'accounts.binance.com',
+        path: '/bapi/accounts/v1/public/account/security/check/result',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(postData),
+        },
+      };
+
+      const req = https.request(options, (res) => {
+        let data = '';
+
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+
+        res.on('end', () => {
+          try {
+            const result = JSON.parse(data);
+            console.log('✅ Check Result 성공:', result);
+            resolve({ success: true, data: result.data });
+          } catch (error) {
+            console.error('❌ Check Result 응답 파싱 오류:', error);
+            resolve({ success: false, error: error.message });
+          }
+        });
+      });
+
+      req.on('error', (error) => {
+        console.error('❌ Check Result 요청 오류:', error);
+        resolve({ success: false, error: error.message });
+      });
+
+      req.write(postData);
+      req.end();
+    } catch (error) {
+      console.error('❌ Check Result 실패:', error);
+      resolve({ success: false, error: error.message });
     }
+  });
+});
 
-    return result;
-  } catch (error) {
-    console.error('❌ 바이낸스 로그인 오류:', error);
-    return { success: false, error: error.message };
-  }
+// 바이낸스 QR 로그인 - Get QR Code
+ipcMain.handle('binance-qr-get-code', async (event, { random, sessionId }) => {
+  return new Promise((resolve) => {
+    try {
+      console.log('📱 QR 코드 생성 시작...');
+
+      const postData = JSON.stringify({ random, sessionId });
+
+      const options = {
+        hostname: 'accounts.binance.com',
+        path: '/bapi/accounts/v2/public/qrcode/login/get',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(postData),
+        },
+      };
+
+      const req = https.request(options, (res) => {
+        let data = '';
+
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+
+        res.on('end', () => {
+          try {
+            const result = JSON.parse(data);
+            console.log('✅ QR 코드 생성 성공:', result);
+            resolve({ success: true, data: result.data });
+          } catch (error) {
+            console.error('❌ QR 코드 응답 파싱 오류:', error);
+            resolve({ success: false, error: error.message });
+          }
+        });
+      });
+
+      req.on('error', (error) => {
+        console.error('❌ QR 코드 요청 오류:', error);
+        resolve({ success: false, error: error.message });
+      });
+
+      req.write(postData);
+      req.end();
+    } catch (error) {
+      console.error('❌ QR 코드 생성 실패:', error);
+      resolve({ success: false, error: error.message });
+    }
+  });
+});
+
+// 바이낸스 QR 로그인 - Query Status
+ipcMain.handle('binance-qr-query-status', async (event, { qrCode, random, sessionId }) => {
+  return new Promise((resolve) => {
+    try {
+      const postData = JSON.stringify({ qrCode, random, sessionId });
+
+      const options = {
+        hostname: 'accounts.binance.com',
+        path: '/bapi/accounts/v1/public/qrcode/login/query',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(postData),
+        },
+      };
+
+      const req = https.request(options, (res) => {
+        let data = '';
+
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+
+        res.on('end', () => {
+          try {
+            const result = JSON.parse(data);
+            console.log('🔄 QR 상태 조회:', result.data?.status);
+            resolve({ success: true, data: result.data });
+          } catch (error) {
+            console.error('❌ QR 상태 응답 파싱 오류:', error);
+            resolve({ success: false, error: error.message });
+          }
+        });
+      });
+
+      req.on('error', (error) => {
+        console.error('❌ QR 상태 요청 오류:', error);
+        resolve({ success: false, error: error.message });
+      });
+
+      req.write(postData);
+      req.end();
+    } catch (error) {
+      console.error('❌ QR 상태 조회 실패:', error);
+      resolve({ success: false, error: error.message });
+    }
+  });
 });
 
 // 바이낸스 로그인 상태 확인
 ipcMain.handle('binance-is-logged-in', async () => {
   try {
     console.log('🔍 로그인 상태 확인 중...');
-    console.log('   - binanceLoginService 존재:', !!binanceLoginService);
+    console.log('   - 쿠키 개수:', loginCookies.length);
 
-    if (!binanceLoginService) {
-      console.log('   - 결과: 서비스 인스턴스 없음');
-      return { success: true, isLoggedIn: false };
-    }
+    const isLoggedIn = loginCookies.length > 0 && loginCookies.some((c) => c.name === 'logined');
 
-    const isLoggedIn = binanceLoginService.isLoggedIn();
-    const cookies = binanceLoginService.getCookies();
-    const csrfToken = binanceLoginService.getCsrfToken();
-    const bncUuid = binanceLoginService.getBncUuid();
-
-    console.log('   - 쿠키 개수:', cookies.length);
-    console.log('   - CSRF Token:', csrfToken ? '있음' : '없음');
-    console.log('   - BNC-UUID:', bncUuid ? '있음' : '없음');
     console.log('   - isLoggedIn 결과:', isLoggedIn);
 
     return { success: true, isLoggedIn };
@@ -453,15 +622,14 @@ ipcMain.handle('binance-is-logged-in', async () => {
   }
 });
 
-// 바이낸스 브라우저 강제 종료
-ipcMain.handle('binance-close-browser', async () => {
+// 바이낸스 로그아웃
+ipcMain.handle('binance-logout', async () => {
   try {
-    if (binanceLoginService) {
-      await binanceLoginService.close();
-    }
+    loginCookies = [];
+    console.log('🔒 로그아웃 완료');
     return { success: true };
   } catch (error) {
-    console.error('❌ 브라우저 종료 오류:', error);
+    console.error('❌ 로그아웃 오류:', error);
     return { success: false, error: error.message };
   }
 });
@@ -541,6 +709,91 @@ ipcMain.handle('binance-get-futures-accounts', async (event, { apiKey, apiSecret
       req.end();
     } catch (error) {
       console.error('❌ 바이낸스 Futures REST API 자산 조회 실패:', error);
+      resolve({ success: false, error: error.message });
+    }
+  });
+});
+
+// REST API로 바이낸스 Futures 포지션 조회
+ipcMain.handle('binance-get-futures-positions', async (event, { apiKey, apiSecret }) => {
+  return new Promise(async (resolve, reject) => {
+    try {
+      // 1. 바이낸스 서버 시간 조회
+      let serverTime;
+      try {
+        serverTime = await getBinanceServerTime();
+      } catch (error) {
+        console.warn('⚠️ 서버 시간 조회 실패, 로컬 시간 사용:', error.message);
+        serverTime = Date.now();
+      }
+
+      // 2. 타임스탬프 생성
+      const timestamp = serverTime - 1000;
+      const recvWindow = 10000;
+      const queryString = `timestamp=${timestamp}&recvWindow=${recvWindow}`;
+
+      // 3. HMAC SHA256 서명 생성
+      const signature = crypto.createHmac('sha256', apiSecret).update(queryString).digest('hex');
+
+      const options = {
+        hostname: 'fapi.binance.com',
+        path: `/fapi/v2/positionRisk?${queryString}&signature=${signature}`,
+        method: 'GET',
+        headers: {
+          'X-MBX-APIKEY': apiKey,
+        },
+      };
+
+      const req = https.request(options, (res) => {
+        let data = '';
+
+        res.on('data', (chunk) => {
+          data += chunk;
+        });
+
+        res.on('end', () => {
+          try {
+            const positionsData = JSON.parse(data);
+
+            if (positionsData.code) {
+              console.error('❌ 바이낸스 Futures 포지션 API 오류:', positionsData.msg);
+              resolve({ success: false, error: positionsData.msg });
+              return;
+            }
+
+            // 포지션이 있는 것만 필터링 (positionAmt가 0이 아닌 것)
+            const positions = positionsData
+              .filter((position) => parseFloat(position.positionAmt) !== 0)
+              .map((position) => ({
+                symbol: position.symbol,
+                positionAmt: position.positionAmt,
+                entryPrice: position.entryPrice,
+                markPrice: position.markPrice,
+                unRealizedProfit: position.unRealizedProfit,
+                liquidationPrice: position.liquidationPrice,
+                leverage: position.leverage,
+                marginType: position.marginType,
+                isolatedMargin: position.isolatedMargin,
+                positionSide: position.positionSide,
+              }));
+
+            console.log('✅ 바이낸스 Futures 포지션 조회 성공:', positions.length, '개 포지션');
+            resolve({ success: true, positions });
+          } catch (error) {
+            console.error('❌ 바이낸스 Futures 포지션 응답 파싱 오류:', error);
+            resolve({ success: false, error: error.message });
+          }
+        });
+      });
+
+      req.on('error', (error) => {
+        console.error('❌ 바이낸스 Futures 포지션 요청 오류:', error);
+        resolve({ success: false, error: error.message });
+      });
+
+      req.end();
+    } catch (error) {
+      console.error('❌ 바이낸스 Futures 포지션 조회 실패:', error);
       resolve({ success: false, error: error.message });
     }
   });

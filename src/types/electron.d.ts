@@ -3,20 +3,47 @@ export interface UpbitAPI {
   getOrdersChance: (accessKey: string, secretKey: string, market: string) => Promise<any>;
 }
 
-export interface BinanceLoginAPI {
-  login: () => Promise<{
+export interface BinanceQRLoginAPI {
+  precheck: () => Promise<{
     success: boolean;
-    cookies?: any[];
-    csrfToken?: string;
-    bncUuid?: string;
-    sessionExpiry?: number;
-    sessionExpiryDate?: string;
-    cookiesWithExpiry?: Array<{
-      name: string;
-      expires: number;
-      expiresDate: string;
-      remainingDays: number;
-    }>;
+    data?: {
+      sessionId: string;
+      captchaType?: string;
+      validateId?: string;
+      validationTypes?: string[];
+    };
+    error?: string;
+  }>;
+  checkResult: (sessionId: string) => Promise<{
+    success: boolean;
+    data?: {
+      sessionId: string;
+    };
+    error?: string;
+  }>;
+  getQRCode: (
+    random: string,
+    sessionId: string
+  ) => Promise<{
+    success: boolean;
+    data?: {
+      qrCode: string;
+      originalQrCode: string;
+    };
+    error?: string;
+  }>;
+  queryStatus: (
+    qrCode: string,
+    random: string,
+    sessionId: string
+  ) => Promise<{
+    success: boolean;
+    data?: {
+      status: 'NEW' | 'EXPIRED' | 'CONFIRMED' | 'SUCCESS';
+      token?: string;
+      code?: string;
+      bncLocation?: string;
+    };
     error?: string;
   }>;
   isLoggedIn: () => Promise<{
@@ -24,7 +51,7 @@ export interface BinanceLoginAPI {
     isLoggedIn?: boolean;
     error?: string;
   }>;
-  closeBrowser: () => Promise<{
+  logout: () => Promise<{
     success: boolean;
     error?: string;
   }>;
@@ -33,7 +60,7 @@ export interface BinanceLoginAPI {
 declare global {
   interface Window {
     upbitAPI: UpbitAPI;
-    binanceLoginAPI: BinanceLoginAPI;
+    binanceQRLoginAPI: BinanceQRLoginAPI;
     versions: {
       node: () => string;
       chrome: () => string;

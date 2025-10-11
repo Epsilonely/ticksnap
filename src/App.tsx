@@ -57,7 +57,7 @@ function App() {
 
   return (
     <Provider store={store}>
-      <div className="flex justify-center w-full h-screen bg-[#F5F5F5]">
+      <div className="flex justify-center w-full h-screen bg-[#ffffff]">
         <div className="flex gap-2 md:max-w-[1024px] lg:max-w-[1128px] xl:max-w-[1980px] 2xl:max-w-[2400px] w-full mx-auto h-full p-2 sm:p-1 lg:p-2">
           {/* 왼쪽 사이드바 - 마켓 블록 */}
           <div className="min-w-[380px]">
