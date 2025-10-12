@@ -10,6 +10,36 @@
   src: url('../public/fonts/righteous-v18-latin-regular.woff2') format('woff2');
 }
 
+@font-face {
+  font-family: 'SpoqaHanSans';
+  src: url('../public/fonts/SpoqaHanSansNeo-Bold.woff2') format('woff2');
+  font-weight: 700;
+}
+
+@font-face {
+  font-family: 'SpoqaHanSans';
+  src: url('../public/fonts/SpoqaHanSansNeo-Medium.woff2') format('woff2');
+  font-weight: 500;
+}
+
+@font-face {
+  font-family: 'SpoqaHanSans';
+  src: url('../public/fonts/SpoqaHanSansNeo-Regular.woff2') format('woff2');
+  font-weight: 400;
+}
+
+@font-face {
+  font-family: 'SpoqaHanSans';
+  src: url('../public/fonts/SpoqaHanSansNeo-Light.woff2') format('woff2');
+  font-weight: 300;
+}
+
+@font-face {
+  font-family: 'SpoqaHanSans';
+  src: url('../public/fonts/SpoqaHanSansNeo-Thin.woff2') format('woff2');
+  font-weight: 200;
+}
+
 body {
   margin: 0;
   font-family: 'Pretendard';

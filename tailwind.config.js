@@ -7,6 +7,7 @@ module.exports = {
       fontFaminly: {
         pretendard: ['Pretendard'],
         righteous: ['Righteous', 'Pretendard'],
+        spoqahansans: ['SpoqaHanSans'],
       },
     },
   },

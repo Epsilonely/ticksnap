@@ -212,45 +212,45 @@ function Portfolio() {
   const totalProfitLossRate = upbitProfitLossRate;
 
   return (
-    <div className="h-full bg-white tracking-normal">
+    <div className="w-full h-full bg-white tracking-normal">
       {/* 총 자산 요약 */}
       <div>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 gap-4 font-[SpoqaHanSans] text-[#000000]">
           <div className="flex flex-col p-2 gap-2">
-            <div className="text-[12px] text-[#212833] font-['Pretendard'] font-normal">Est. Total Value</div>
             {/* upbit */}
-            <div className="flex gap-2 items-center">
-              <div className={`${SVG_SIZE_CLASS} overflow-hidden`}>
-                <img src={UpbitSvg} alt="upbit_svg" className="w-full h-full object-cover" />
-              </div>
-              <div className="flex text-[24px] font-bold items-center leading-[1] font-['Pretendard'] text-[#1E1D1A]">
-                <PriceDisplay price={upbitKRW + upbitTotalValue} className="" decimalPlaces={3} />
-              </div>
-            </div>
-            {/* binance all */}
-            <div className="flex flex-col">
+            <div className="flex flex-col gap-0.5">
+              <div className="text-[12px] text-[#212833] font-medium">Upbit</div>
               <div className="flex gap-2 items-center">
-                <div className={`${SVG_SIZE_CLASS} overflow-hidden`}>
-                  <img src={BinanceSvg} alt="binance_svg" className="w-full h-full object-cover" />
+                <div className="flex text-[36px] font-extrabold items-center leading-[1]">
+                  <PriceDisplay price={upbitKRW + upbitTotalValue} className="" decimalPlaces={3} />
                 </div>
-                <div className="flex text-[24px] font-bold items-center leading-[1] font-['Pretendard'] text-[#1E1D1A]">
-                  <PriceDisplay price={binanceTotalValue} className="" decimalPlaces={8} />
-                </div>
-              </div>
-              <div className="flex text-sm ml-[32px] mt-1 font-['Righteous'] text-[#8BA3D4]">
-                <PriceDisplay price={binanceTotalValue * usdtToKrw} className="" decimalPlaces={8} />
               </div>
             </div>
-            <div className="flex w-full">
+            <div className="flex flex-col gap-0.5">
+              {/* binance all */}
+              <div className="text-[12px] text-[#212833] font-medium">Binance</div>
+              <div className="flex flex-col">
+                <div className="flex gap-2 items-center">
+                  <div className="flex text-[36px] font-extrabold items-center leading-[1] text-[#1E1D1A]">
+                    <PriceDisplay price={binanceTotalValue} className="" decimalPlaces={8} />
+                  </div>
+                </div>
+                <div className="flex text-sm mt-1 text-[#8BA3D4]">
+                  <span>≈</span>
+                  <PriceDisplay price={binanceTotalValue * usdtToKrw} className="" decimalPlaces={8} />
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 w-full">
               {/* binance spot */}
-              <div className="flex flex-1 flex-col font-['Pretendard']">
+              <div className="flex flex-1 flex-col">
                 <span className="text-[12px] text-[#212833] font-normal">Spot</span>
-                <PriceDisplay price={binanceSpotUSDT + binanceSpotTotalValue} className="font-semibold text-[14px] text-[#1E1D1A]" decimalPlaces={8} />
+                <PriceDisplay price={binanceSpotUSDT + binanceSpotTotalValue} className="font-semibold text-[16px] text-[#1E1D1A]" decimalPlaces={8} />
               </div>
               {/* binance futures */}
-              <div className="flex flex-1 flex-col font-['Pretendard']">
+              <div className="flex flex-1 flex-col">
                 <span className="text-[12px] text-[#212833] font-normal">USDⓈ-M Futures</span>
-                <PriceDisplay price={binanceFuturesUSDT + binanceFuturesTotalValue} className="font-semibold text-[14px] text-[#1E1D1A]" decimalPlaces={8} />
+                <PriceDisplay price={binanceFuturesUSDT + binanceFuturesTotalValue} className="font-semibold text-[16px] text-[#1E1D1A]" decimalPlaces={8} />
               </div>
             </div>
           </div>
