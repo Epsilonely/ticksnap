@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
 import { selectCoin } from '../store/slices/coinSlice';
-import { toggleFavorite } from '../store/slices/favoriteSlice';
 import { dataManager } from '../services/DataManager';
 import Scrollbar from '../common/Scrollbar';
 import ExchangePriceDisplay from '../components/ExchangePriceDisplay';
@@ -51,39 +50,6 @@ function MarketBlock() {
   // 코인 선택 핸들러
   const handleSelectCoin = (market: string) => {
     dispatch(selectCoin(market));
-  };
-
-  // 즐겨찾기 토클 핸들러
-  const handleToggleFavorite = (e: React.MouseEvent, market: string) => {
-    e.stopPropagation(); // 이벤트 버블링 방지ㅣ
-    dispatch(toggleFavorite(market));
-  };
-
-  // 거래대금 가져오기 (원래 단위: 원)
-  const getTradeVolume = (acc_trade_price_24h: number) => {
-    if (!acc_trade_price_24h) return 0;
-    return acc_trade_price_24h; // 원 단위
-  };
-
-  // 거래대금 포맷팅 (단위: 조, 억, 천만, 백만원)
-  const formatTradeVolume = (volume: number) => {
-    if (volume === 0) return { value: '0', unit: '원' };
-
-    if (volume >= 1000000000000) {
-      // 1조원 이상
-      return { value: (volume / 1000000000000).toFixed(1), unit: '조' };
-    } else if (volume >= 100000000) {
-      // 1억원 이상
-      return { value: (volume / 100000000).toFixed(1), unit: '억' };
-    } else if (volume >= 10000000) {
-      // 1천만원 이상
-      return { value: (volume / 10000000).toFixed(1), unit: '천만' };
-    } else if (volume >= 1000000) {
-      // 1백만원 이상
-      return { value: (volume / 1000000).toFixed(1), unit: '백만' };
-    } else {
-      return { value: volume.toFixed(0), unit: '원' };
-    }
   };
 
   return (

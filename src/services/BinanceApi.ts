@@ -156,4 +156,42 @@ export const convertBinanceCandleToUpbitFormat = (binanceCandle: BinanceCandleDa
   };
 };
 
+// 바이낸스 리더보드 관련 타입
+export interface LeaderboardUser {
+  encryptedUid: string;
+  nickname: string;
+  followerCount: number;
+  userPhotoUrl: string;
+}
+
+export interface SearchNicknameResponse {
+  code: string;
+  message: string | null;
+  messageDetail: string | null;
+  data: LeaderboardUser[];
+  success: boolean;
+}
+
+/**
+ * 닉네임으로 바이낸스 리더보드 유저 검색
+ */
+export const searchNickname = async (nickname: string): Promise<SearchNicknameResponse> => {
+  try {
+    const response = await axios.post<SearchNicknameResponse>(
+      '/bapi/futures/v1/public/future/leaderboard/searchNickname',
+      { nickname },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    return response.data;
+  } catch (error) {
+    console.error('닉네임 검색 실패:', error);
+    throw error;
+  }
+};
+
 export type { BinanceTickerData, BinanceCandleData, BinanceSymbolInfo };
