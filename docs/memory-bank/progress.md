@@ -11,15 +11,16 @@
 - Memory Bank system (shared between Cline and Claude Code)
 
 ### API Integration
-- Binance API service (BinanceApi.ts) — markets, tickers, candles
+- Binance Futures API service (BinanceApi.ts) — markets, tickers, candles via `fapi.binance.com`
 - Binance Account API (BinanceAccountApi.ts) — Spot balances, Futures balances, Futures positions
 - Upbit API service (UpbitApi.ts) — markets, tickers, candles
 - Upbit Account API (UpbitAccountApi.ts) — account balances via IPC
-- DataManager singleton for centralized data orchestration (~571 lines)
-- Binance data normalization to Upbit format for unified processing
-- REST polling every 1 second (top 100 Binance coins)
-- WebSocket connections for favorite coins only (bandwidth optimization)
+- DataManager singleton for centralized data orchestration
+- Binance Futures data normalization to Upbit format for unified processing
+- REST polling every 1 second (등록된 코인만 — 최적화됨)
+- WebSocket connections for favorite coins only (`wss://fstream.binance.com`)
 - Automatic WebSocket reconnection (5-second retry)
+- 등록 코인 시스템: 사용자가 등록한 코인만 폴링 (기존 전체 수백 개 → 10~30개)
 
 ### UI Components
 - Portfolio component — Upbit KRW, Binance Spot USDT, Binance Futures positions with P&L
@@ -30,8 +31,8 @@
 - Custom Scrollbar component
 
 ### Block Components
-- MarketBlock — coin list with filtering (All / Favorites / Holdings)
-- CoinDetailBlock — selected coin details, price, chart, trading panel
+- MarketBlock — 검색바 + 등록 코인 리스트 (내 코인 / 관심 / 보유 탭)
+- CoinDetailBlock — selected coin details, price, trading panel
 - Base Block component (type dispatcher)
 
 ### App Layout
@@ -42,6 +43,7 @@
 ### State Management
 - coinSlice: unified coin data, selected coin, loading/error states
 - favoriteSlice: watchlist persisted to localStorage
+- registeredCoinSlice: 등록 코인 목록 persisted to localStorage (기본값: BTC/ETH/XRP/SOL/DOGE)
 - Store typed with TypeScript (RootState, AppDispatch)
 
 ### Electron Integration
@@ -103,13 +105,14 @@
 Core features are implemented and functional. The app successfully aggregates real-time market data from Upbit and Binance and displays portfolio with P&L. The main gap is the Trading component (stub only) and production-readiness improvements.
 
 ### Recently Completed
+- **Binance Spot → Futures 가격 전환** — BinanceApi.ts 엔드포인트를 fapi.binance.com으로 교체
+- **등록 코인 시스템** — registeredCoinSlice, DataManager 등록 코인 기반 폴링, MarketBlock 검색 UI
+- Leaderboard 및 MiniChart 제거
 - Binance Futures position tracking
 - Binance authentication integration
-- Leaderboard tab with nickname search (later removed)
 - Portfolio view with Upbit / Binance Spot / Binance Futures separation
 - Price display decimal formatting
 - API optimization (REST + WebSocket efficiency)
-- QR login feature (added and then removed)
 - Memory Bank system setup for Cline + Claude Code
 
 ### Blockers
@@ -144,6 +147,8 @@ None currently identified.
 - Component separation into blocks / components / common
 - Binance data normalization to Upbit format for unified UnifiedCoinData
 - WebSocket limited to favorites for bandwidth optimization
+- Binance Spot → Futures API 전환
+- 등록 코인 기반 데이터 폴링 최적화
 - Tab-based navigation (Trader / Assets)
 
 ### Removed Features
@@ -169,6 +174,8 @@ None currently identified.
 - [x] ~~Leaderboard feature~~ (removed)
 - [x] Portfolio with multi-exchange support
 - [x] Memory Bank documentation system
+- [x] Binance Spot → Futures 가격 전환
+- [x] 등록 코인 시스템 (검색 + 등록/해제)
 
 ### Upcoming
 - [ ] Trading order execution
@@ -182,7 +189,7 @@ None currently identified.
 ### Code Stats
 - Components: ~15 (5 blocks, 4 components, 2 common)
 - Services: 5 (DataManager, UpbitApi, BinanceApi, UpbitAccountApi, BinanceAccountApi)
-- Redux Slices: 2 (coinSlice, favoriteSlice)
+- Redux Slices: 3 (coinSlice, favoriteSlice, registeredCoinSlice)
 - Total Source Files: ~40+
 - DataManager: ~571 lines
 

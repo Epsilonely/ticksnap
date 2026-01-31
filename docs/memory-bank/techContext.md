@@ -75,9 +75,10 @@ yarn install
 ### Vite Dev Proxy
 
 Development proxies handle CORS for exchange APIs:
-- `/api/upbit` → `https://api.upbit.com`
-- `/api/binance` → `https://api.binance.com`
+- `/api/upbit` → `https://api.upbit.com` (rewrite: prefix 제거)
+- `/api/binance` → `https://api.binance.com` (rewrite: prefix 제거)
 - `/bapi` → `https://www.binance.com`
+- `/fapi` → `https://fapi.binance.com` (Binance USD-M Futures)
 
 Vite root is `./src` (not project root); build output goes to `../dist`.
 
@@ -92,9 +93,10 @@ Vite root is `./src` (not project root); build output goes to `../dist`.
 
 ### API Constraints
 
-- **Binance:** Rate limits, API key permissions
+- **Binance Futures:** Rate limits, 단일 연결당 최대 1024 스트림, 초당 10개 수신 메시지
+- **Binance Futures ticker:** `?symbols=[]` 미지원 → 전체 fetch + client-side filter
 - **Upbit:** Rate limits, JWT authentication
-- WebSocket connection limits
+- WebSocket connection limits (Futures: `wss://fstream.binance.com`)
 - Network latency considerations
 
 ### Performance Constraints

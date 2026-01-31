@@ -16,6 +16,10 @@ function App() {
         // Redux dispatch 설정
         dataManager.setDispatch(store.dispatch);
 
+        // 등록 코인 로드 → DataManager에 전달 (초기화 전)
+        const registeredCoins = store.getState().registeredCoin.registeredCoins;
+        dataManager.updateRegisteredCoins(registeredCoins);
+
         // DataManager 초기화
         await dataManager.initialize();
 
@@ -49,8 +53,19 @@ function App() {
 
     initializeDataManager();
 
+    // 등록 코인 변경 감지 → DataManager 동기화
+    let prevRegisteredCoins = store.getState().registeredCoin.registeredCoins;
+    const unsubscribe = store.subscribe(() => {
+      const currentRegisteredCoins = store.getState().registeredCoin.registeredCoins;
+      if (currentRegisteredCoins !== prevRegisteredCoins) {
+        prevRegisteredCoins = currentRegisteredCoins;
+        dataManager.updateRegisteredCoins(currentRegisteredCoins);
+      }
+    });
+
     // 컴포넌트 언마운트 시 정리
     return () => {
+      unsubscribe();
       dataManager.destroy();
     };
   }, []);

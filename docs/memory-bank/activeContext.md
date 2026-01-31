@@ -2,11 +2,23 @@
 
 ## Current Work Focus
 
-Post core-feature implementation phase. Stabilization and improvement. Memory Bank system configured for shared access between Cline and Claude Code.
+등록 코인 시스템 구현 완료 + Binance Futures 가격 전환 완료. 안정화 및 추가 기능 개발 단계.
 
 ## Recent Changes
 
-### 2026.02.01
+### 2026.02.01 (2차)
+- **Binance Spot → Futures 전환** — BinanceApi.ts 전체 엔드포인트를 `fapi.binance.com` Futures API로 교체
+  - `fetchBinanceMarkets()`: PERPETUAL 계약만 필터링
+  - `fetchBinanceTickers()`: Futures는 `?symbols=[]` 미지원 → 전체 fetch + client-side filter
+  - WebSocket URL: `wss://fstream.binance.com` (Futures 전용)
+  - Vite 프록시: `/fapi` → `https://fapi.binance.com` 추가
+- **등록 코인 시스템** — 사용자가 보고 싶은 코인만 등록하여 표시
+  - `registeredCoinSlice.ts` 신규 생성 (localStorage persist, 기본값: BTC/ETH/XRP/SOL/DOGE)
+  - DataManager: 등록 코인만 REST 폴링 (기존: 전체 수백 개 → 등록된 10~30개만)
+  - MarketBlock UI 재설계: 검색바 + "내 코인/관심/보유" 탭
+  - App.tsx: store subscription으로 등록 코인 변경 시 DataManager 자동 동기화
+
+### 2026.02.01 (1차)
 - **Removed Leaderboard feature** — deleted `Leaderboard.tsx`, removed tab/enum/switch/API code
 - **Removed MiniChart component** — deleted `MiniChart.tsx`, removed from CoinInfo props and rendering (to be reimplemented later)
 - Cleaned up `store/types.ts` — removed `TickData`, `IntervalType`, chart-related state fields
@@ -34,7 +46,9 @@ Tab-based navigation structure:
 - **Trader tab**: Coin detail info, price, order panel (CoinDetailBlock)
 - **Assets tab**: Portfolio — Upbit KRW, Binance Spot USDT, Binance Futures positions (Portfolio)
 
-Left sidebar: MarketBlock (coin list, filtering: All / Favorites / Holdings)
+Left sidebar: MarketBlock
+- 검색바 (상단) — 전체 마켓에서 코인 검색 및 등록/해제
+- 탭: 내 코인 (등록된 코인) / 관심 (즐겨찾기) / 보유 (미구현)
 
 ## Next Steps
 
@@ -54,8 +68,9 @@ Left sidebar: MarketBlock (coin list, filtering: All / Favorites / Holdings)
 - Binance data normalized to Upbit format for unified processing
 
 ### API Integration
-- WebSocket: connected only for favorite coins (bandwidth optimization)
-- REST: 1-second interval polling (top 100 Binance coins)
+- **Binance Futures API** (`fapi.binance.com`) — Spot에서 Futures로 전환 완료
+- WebSocket: 관심(favorite) 코인만 연결 (`wss://fstream.binance.com`)
+- REST: 1초 간격 폴링 (등록된 코인만, 기존 전체 수백 개에서 최적화)
 - REST updates skipped for coins with active WebSocket feeds
 - Automatic reconnection (5-second retry)
 
@@ -82,6 +97,7 @@ Left sidebar: MarketBlock (coin list, filtering: All / Favorites / Holdings)
 ### State Management
 - coinSlice: coin market data (unifiedCoins, selectedCoin, loading, error)
 - favoriteSlice: favorites (persisted to localStorage)
+- registeredCoinSlice: 등록 코인 목록 (persisted to localStorage, 기본값: BTC/ETH/XRP/SOL/DOGE)
 
 ## Learnings and Project Insights
 

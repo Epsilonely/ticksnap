@@ -22,6 +22,7 @@
 │  │      Redux Store             │  │
 │  │  - coinSlice                 │  │
 │  │  - favoriteSlice             │  │
+│  │  - registeredCoinSlice       │  │
 │  └──────────────────────────────┘  │
 │                 │                   │
 │  ┌──────────────┴──────────────┐  │
@@ -60,9 +61,9 @@
 │  │  (left      │  │                      │  │
 │  │   sidebar)  │  │  Active Tab Content  │  │
 │  │             │  │  - CoinDetailBlock   │  │
-│  │  Coin list  │  │  - Portfolio         │  │
-│  │  + filters  │  │                      │  │
-│  │             │  │                      │  │
+│  │  [검색바]   │  │  - Portfolio         │  │
+│  │  내코인/    │  │                      │  │
+│  │  관심/보유  │  │                      │  │
 │  └─────────────┘  └──────────────────────┘  │
 └──────────────────────────────────────────────┘
 ```
@@ -107,10 +108,10 @@ Tab navigation managed by local state in App.tsx (`activeMiddleTab`):
 - AccountApi services communicate via IPC (renderer → main → exchange)
 
 ### Data Normalization Pattern
-- Binance data converted to Upbit-compatible format
+- Binance **Futures** data converted to Upbit-compatible format
 - `convertBinanceTickerToUpbitFormat()` and `convertBinanceCandleToUpbitFormat()` in BinanceApi.ts
 - Unified `UnifiedCoinData` structure merges both exchanges
-- Symbol mapping: Upbit `KRW-BTC` + Binance `BTCUSDT` → symbol `BTC`
+- Symbol mapping: Upbit `KRW-BTC` + Binance Futures `BTCUSDT` → symbol `BTC`
 
 ### IPC Bridge Pattern (Electron Security)
 - Context isolation enabled — renderer cannot access Node.js directly
@@ -126,11 +127,17 @@ Tab navigation managed by local state in App.tsx (`activeMiddleTab`):
 - Components subscribe to Redux store changes
 - Real-time updates propagate: WebSocket → Service → Redux → Component
 
+### Registered Coin Pattern
+- 사용자가 검색으로 보고 싶은 코인을 등록/해제
+- `registeredCoinSlice` (localStorage persist, 기본값: BTC/ETH/XRP/SOL/DOGE)
+- DataManager는 등록 코인만 REST 폴링 (기존 전체 수백 개 → 등록된 코인만)
+- App.tsx에서 store subscribe로 등록 코인 변경 시 DataManager 자동 동기화
+
 ### Bandwidth Optimization Pattern
-- WebSocket connections opened only for favorite coins
-- REST polling handles all other coins (1-second interval)
+- WebSocket connections opened only for favorite coins (`wss://fstream.binance.com`)
+- REST polling handles registered coins only (1-second interval)
 - REST updates skipped for coins with active WebSocket feeds
-- Top 100 Binance coins fetched per polling cycle
+- Binance Futures ticker: 전체 fetch + client-side filter (Futures API 제약)
 
 ### Component Composition
 - Small, reusable components (PriceDisplay, ExchangePriceDisplay)
@@ -146,7 +153,7 @@ Tab navigation managed by local state in App.tsx (`activeMiddleTab`):
 - **CoinInfo.tsx:** Bid/ask ratio visualization
 
 ### Block Components
-- **MarketBlock.tsx:** Coin list with filtering (All / Favorites / Holdings)
+- **MarketBlock.tsx:** 검색바 + 등록 코인 리스트 (내 코인 / 관심 / 보유 탭)
 - **CoinDetailBlock.tsx:** Selected coin details — price, chart, trading panel
 - **Block.tsx:** Block type dispatcher
 
@@ -159,10 +166,10 @@ Tab navigation managed by local state in App.tsx (`activeMiddleTab`):
 ## Critical Implementation Paths
 
 ### Real-time Price Updates
-1. DataManager initializes and fetches all markets from both exchanges
+1. DataManager initializes and fetches all markets from both exchanges (Upbit KRW + Binance Futures PERPETUAL)
 2. Symbol mapping built (Upbit + Binance → unified symbol)
-3. REST polling every 1 second for all coins
-4. WebSocket connections for favorite coins (higher frequency)
+3. 등록 코인만 REST 폴링 (1초 간격)
+4. 관심(favorite) 코인은 WebSocket 실시간 업데이트 (REST 스킵)
 5. Data normalized to UnifiedCoinData format
 6. Redux store updated via `setUnifiedCoins` dispatch
 7. Components re-render with new prices + animations
@@ -185,7 +192,8 @@ Tab navigation managed by local state in App.tsx (`activeMiddleTab`):
 
 ### Data Synchronization
 1. DataManager coordinates multiple data sources
-2. Periodic REST refresh for all coins
-3. Continuous WebSocket updates for favorites
+2. Periodic REST refresh for registered coins only
+3. Continuous WebSocket updates for favorites (`wss://fstream.binance.com`)
 4. State reconciliation on reconnection (5-second retry)
 5. Error recovery with automatic retry
+6. 등록 코인 변경 시 즉시 데이터 갱신 (`refreshRegisteredCoinData()`)

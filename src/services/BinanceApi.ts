@@ -7,6 +7,7 @@ interface BinanceSymbolInfo {
   status: string;
   baseAsset: string;
   quoteAsset: string;
+  contractType?: string; // PERPETUAL, CURRENT_QUARTER 등 (Futures)
 }
 
 interface BinanceExchangeInfo {
@@ -48,34 +49,33 @@ interface BinanceCandleData {
   ignore: string; // 무시
 }
 
-// 바인낸스 USDT 마켓 목록 가져오기
+// 바이낸스 Futures USDT 무기한 계약 목록 가져오기
 export const fetchBinanceMarkets = async (): Promise<BinanceSymbolInfo[]> => {
   try {
-    const response = await axios.get<BinanceExchangeInfo>('/api/binance/api/v3/exchangeInfo');
+    const response = await axios.get<BinanceExchangeInfo>('/fapi/v1/exchangeInfo');
 
-    // USDT 페어만 필터링하고 활성 상태인 것만
-    return response.data.symbols.filter((symbol) => symbol.quoteAsset === 'USDT' && symbol.status === 'TRADING');
+    // USDT 무기한 계약만 필터링
+    return response.data.symbols.filter((symbol) => symbol.quoteAsset === 'USDT' && symbol.status === 'TRADING' && symbol.contractType === 'PERPETUAL');
   } catch (error) {
-    console.error('Failed to fetch Binance markets:', error);
+    console.error('Failed to fetch Binance Futures markets:', error);
     return [];
   }
 };
 
-// 바인낸스 현재가 정보 가져오기
+// 바이낸스 Futures 현재가 정보 가져오기
 export const fetchBinanceTickers = async (symbols?: string[]): Promise<BinanceTickerData[]> => {
   try {
-    let url = '/api/binance/api/v3/ticker/24hr';
+    // Futures API는 ?symbols=[] 미지원 → 전체 fetch 후 client-side 필터
+    const response = await axios.get<BinanceTickerData[]>('/fapi/v1/ticker/24hr');
+    const allTickers = Array.isArray(response.data) ? response.data : [response.data];
 
-    // 특정 심볼들만 요청하는 경우
     if (symbols && symbols.length > 0) {
-      const symbolsParam = symbols.map((s) => `"${s}"`).join(',');
-      url += `?symbols=[${symbolsParam}]`;
+      const symbolSet = new Set(symbols);
+      return allTickers.filter((t) => symbolSet.has(t.symbol));
     }
-
-    const response = await axios.get<BinanceTickerData[]>(url);
-    return Array.isArray(response.data) ? response.data : [response.data];
+    return allTickers;
   } catch (error) {
-    console.error('Failed to fetch Binance tickers:', error);
+    console.error('Failed to fetch Binance Futures tickers:', error);
     return [];
   }
 };
@@ -114,7 +114,7 @@ export const fetchBinanceCandles = async (symbol: string, interval: IntervalType
         binanceInterval = '1m';
     }
 
-    const response = await axios.get<BinanceCandleData[]>(`/api/binance/api/v3/klines?symbol=${symbol}&interval=${binanceInterval}&limit=${limit}`);
+    const response = await axios.get<BinanceCandleData[]>(`/fapi/v1/klines?symbol=${symbol}&interval=${binanceInterval}&limit=${limit}`);
 
     return response.data;
   } catch (error) {

@@ -22,6 +22,11 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      '/fapi': {
+        target: 'https://fapi.binance.com',
+        changeOrigin: true,
+        secure: false,
+      },
     },
     port: 3000,
   },
