@@ -1,7 +1,7 @@
 import MarketBlock from './MarketBlock';
 import CoinDetailBlock from './CoinDetailBlock';
 import Portfolio from '../components/Portfolio';
-import Leaderboard from './Leaderboard';
+
 
 enum BlockType {
   BLOCK_TY_MARKET,
@@ -9,7 +9,6 @@ enum BlockType {
   BLOCK_TY_ALARM_HISTORY,
   BLOCK_TY_COIN_DETAIL,
   BLOCK_TY_PORTFOLIO,
-  BLOCK_TY_LEADERBOARD,
 }
 
 type BlockProps = {
@@ -28,9 +27,6 @@ function Block({ type }: BlockProps) {
       break;
     case BlockType.BLOCK_TY_PORTFOLIO:
       content = <Portfolio />;
-      break;
-    case BlockType.BLOCK_TY_LEADERBOARD:
-      content = <Leaderboard />;
       break;
     default:
       content = <div>기본</div>;

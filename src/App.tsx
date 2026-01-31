@@ -4,7 +4,7 @@ import { store } from './store';
 import { dataManager } from './services/DataManager';
 import Block, { BlockType } from './block/Block';
 
-type MiddleTabType = 'exchange' | 'investment' | 'leaderboard';
+type MiddleTabType = 'exchange' | 'investment';
 
 function App() {
   const [activeMiddleTab, setActiveMiddleTab] = useState<MiddleTabType>('exchange');
@@ -80,9 +80,6 @@ function App() {
                 <button className={`flex-1 m-1 px-6 py-2 text-base  transition-colors rounded-xl ${activeMiddleTab === 'investment' ? 'bg-white text-[#212833] font-bold' : 'text-[#999999] hover:text-[#FFFFFF] hover:bg-[#999999]'}`} onClick={() => setActiveMiddleTab('investment')}>
                   Assets
                 </button>
-                <button className={`flex-1 m-1 px-6 py-2 text-base transition-colors rounded-xl ${activeMiddleTab === 'leaderboard' ? 'bg-white text-[#212833] font-bold' : 'text-[#999999] hover:text-[#FFFFFF] hover:bg-[#999999]'}`} onClick={() => setActiveMiddleTab('leaderboard')}>
-                  Leaderboard
-                </button>
               </div>
 
               {/* 탭 컨텐츠 */}
@@ -93,8 +90,6 @@ function App() {
                       return <Block type={BlockType.BLOCK_TY_COIN_DETAIL} />;
                     case 'investment':
                       return <Block type={BlockType.BLOCK_TY_PORTFOLIO} />;
-                    case 'leaderboard':
-                      return <Block type={BlockType.BLOCK_TY_LEADERBOARD} />;
                     default:
                       return <Block type={BlockType.BLOCK_TY_COIN_DETAIL} />;
                   }

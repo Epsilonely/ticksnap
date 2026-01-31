@@ -1,5 +1,6 @@
 import axios from 'axios';
-import { IntervalType } from '../store/types';
+
+type IntervalType = 'tick' | '1' | '5' | '15' | '1hour' | '4hour' | 'day' | 'week';
 
 interface MarketData {
   market: string;

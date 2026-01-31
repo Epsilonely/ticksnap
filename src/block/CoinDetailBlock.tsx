@@ -92,8 +92,7 @@ function CoinDetailBlock() {
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            {/* 차트 - 임시로 빈 데이터 전달 */}
-            <CoinInfo 
+            <CoinInfo
               coinData={{
                 acc_trade_volume_24h: priceData.tradeVolume,
                 acc_trade_price_24h: priceData.tradeVolume,
@@ -101,11 +100,8 @@ function CoinDetailBlock() {
                 acc_bid_volume: 0,
                 acc_ask_volume: 0,
                 prev_closing_price: priceData.price - priceData.changePrice
-              }} 
-              selectedCoin={selectedCoin} 
-              candleData={[]} 
-              tickData={[]} 
-              selectedInterval={'1' as any} 
+              }}
+              selectedCoin={selectedCoin}
             />
 
             {/* 주문창 */}

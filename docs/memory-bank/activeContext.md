@@ -2,81 +2,97 @@
 
 ## Current Work Focus
 
-Setting up Memory Bank system for better project context management across sessions.
+Post core-feature implementation phase. Stabilization and improvement. Memory Bank system configured for shared access between Cline and Claude Code.
 
 ## Recent Changes
 
-- 2026.02.01: Initialized Memory Bank structure with 6 core files
-- Moved Memory Bank to `docs/memory-bank/` for shared access between Cline and Claude Code
-- Project is in active development state
-- Core features implemented: Portfolio, Trading, Market view, Leaderboard
+### 2026.02.01
+- **Removed Leaderboard feature** — deleted `Leaderboard.tsx`, removed tab/enum/switch/API code
+- **Removed MiniChart component** — deleted `MiniChart.tsx`, removed from CoinInfo props and rendering (to be reimplemented later)
+- Cleaned up `store/types.ts` — removed `TickData`, `IntervalType`, chart-related state fields
+- Moved `IntervalType` to local definitions in `BinanceApi.ts` and `UpbitApi.ts`
+- Moved Memory Bank to `docs/memory-bank/` for shared Cline/Claude Code access
+- Added Memory Bank reference section to `CLAUDE.md`
+- Deleted QR login feature (PR #21 — added then removed by decision)
+- UI layout edits and improvements
+
+### Recent Feature History (from git log)
+- **Binance Futures position query** (`getFuturesPositionsViaREST`) implemented (#20)
+- **Binance login/authentication** added (#20)
+- **Leaderboard tab** added — Binance Futures leaderboard nickname search (#20)
+- **Portfolio view improvement** — separate display for Upbit / Binance Spot / Binance Futures (#15)
+- **Price display decimal formatting** improvements (#15, #17)
+- **API optimization** — REST polling and WebSocket efficiency
+- **Favorite icon** change
+- **PriceDisplay decimal color** bug fix
+- **Binance logo** updated (larger size + gradient)
+- Unused code cleanup
+
+## Current App Layout
+
+Tab-based navigation structure:
+- **Trader tab**: Coin detail info, price, order panel (CoinDetailBlock)
+- **Assets tab**: Portfolio — Upbit KRW, Binance Spot USDT, Binance Futures positions (Portfolio)
+
+Left sidebar: MarketBlock (coin list, filtering: All / Favorites / Holdings)
 
 ## Next Steps
 
-1. Review existing codebase for any issues or improvements
-2. Ensure all API integrations are working correctly
-3. Test real-time data updates
-4. Verify trading functionality
-5. Check error handling and edge cases
+1. Implement actual order functionality in Trading component (currently a stub)
+2. Strengthen error handling and user feedback
+3. Verify WebSocket reconnection stability
+4. Add loading state indicators
+5. Implement settings/configuration panel
+6. Build API key management UI (currently hardcoded in config.js)
 
 ## Active Decisions and Considerations
 
 ### Architecture
-
-- Using Redux Toolkit for state management
-- Separate service layer for API calls
-- Component-based architecture with clear separation of concerns
+- Redux Toolkit for state management
+- Service layer pattern separating API calls from UI
+- IPC for authenticated API calls (prevents API key exposure in renderer)
+- Binance data normalized to Upbit format for unified processing
 
 ### API Integration
-
-- WebSocket connections for real-time data
-- REST APIs for account operations and trading
-- Need to handle rate limits and connection stability
+- WebSocket: connected only for favorite coins (bandwidth optimization)
+- REST: 1-second interval polling (top 100 Binance coins)
+- REST updates skipped for coins with active WebSocket feeds
+- Automatic reconnection (5-second retry)
 
 ### UI/UX
-
-- Tailwind CSS for styling
+- Tailwind CSS v4 styling
+- Price change animations (red=rise, blue=fall)
 - Custom scrollbar components
-- Price display components with color coding
+- Chart component planned for reimplementation
 
 ## Important Patterns and Preferences
 
 ### Code Organization
-
-- Services in `src/services/` for API logic
-- Components in `src/components/` for reusable UI
-- Blocks in `src/block/` for larger UI sections
-- Common utilities in `src/common/`
+- `src/services/` — API logic and data orchestration
+- `src/components/` — Reusable UI components
+- `src/block/` — Layout-level block components
+- `src/common/` — Shared UI utilities
+- `src/utils/` — Symbol matching/unification logic
 
 ### Naming Conventions
-
 - PascalCase for components
 - camelCase for functions and variables
-- Descriptive names that indicate purpose
+- Korean comments are common in the codebase
 
 ### State Management
-
-- Redux slices for different domains (coins, favorites)
-- Centralized store configuration
-- Type-safe actions and reducers
+- coinSlice: coin market data (unifiedCoins, selectedCoin, loading, error)
+- favoriteSlice: favorites (persisted to localStorage)
 
 ## Learnings and Project Insights
 
 ### Technical Insights
-
-- Electron + Vite provides fast development experience
-- WebSocket management requires careful connection handling
-- TypeScript helps catch API integration issues early
-
-### Development Workflow
-
-- `npm run dev` for Electron development
-- `npm start` for web-only testing
-- Hot reload works well with Vite
+- DataManager singleton is the core of all data flow — ~571 lines
+- Binance data converted to Upbit format and merged into UnifiedCoinData structure
+- WebSocket limited to favorite coins for bandwidth efficiency
+- Electron context isolation + IPC maintains security
 
 ### Challenges to Watch
-
-- API rate limits from exchanges
-- WebSocket connection stability
-- Secure credential storage
-- Cross-platform compatibility
+- API rate limits (exchange-specific restrictions)
+- WebSocket long-session connection stability
+- API keys hardcoded in config.js — should migrate to environment variables
+- Cross-platform compatibility (only Windows tested so far)

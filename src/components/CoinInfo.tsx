@@ -1,17 +1,9 @@
-import { useSelector, useDispatch } from 'react-redux';
-import { IntervalType } from '../store/types';
-import MiniChart from './MiniChart';
-
 interface CoinInfoProps {
   coinData: any;
   selectedCoin: string;
-  candleData: any[];
-  tickData: any[];
-  selectedInterval: IntervalType;
 }
 
-function CoinInfo({ coinData, selectedCoin, candleData, tickData, selectedInterval }: CoinInfoProps) {
-  const dispatch = useDispatch();
+function CoinInfo({ coinData, selectedCoin }: CoinInfoProps) {
 
   return (
     <div className="bg-[#FFFFFF] p-4 rounded-md border-1 border-[#CCCCCC]">
@@ -55,19 +47,7 @@ function CoinInfo({ coinData, selectedCoin, candleData, tickData, selectedInterv
         })()}
       </div>
 
-      {/* 미니 차트 추가 */}
-      <MiniChart
-        candleData={candleData}
-        tickData={tickData}
-        prevClosingPrice={coinData.prev_closing_price || 0}
-        selectedInterval={selectedInterval}
-        onIntervalChange={(interval) => {
-          // TODO: DataManager에서 캔들 데이터 로딩 기능 구현 필요
-          console.log('인터벌 변경:', interval);
-        }}
-      />
-
-      {/* 기존 거래량 정보 */}
+      {/* 거래량 정보 */}
       <div className="text-sm space-y-1">
         <p>24시간 거래량: {coinData.acc_trade_volume_24h?.toLocaleString()}</p>
         <p>24시간 거래대금: {coinData.acc_trade_price_24h?.toLocaleString()} KRW</p>

@@ -66,11 +66,20 @@ yarn install
 ### Scripts
 
 - `npm start`: Web dev server only (port 3000)
-- `npm run dev`: Electron + Vite dev mode
-- `npm run build`: Production build
+- `npm run dev`: Electron + Vite dev mode (concurrently: Vite + wait-on + Electron)
+- `npm run build`: Production build to `dist/`
 - `npm run preview`: Preview production build
 - `npm run electron-build`: Build Electron app
 - `npm run electron-build:win`: Build for Windows x64
+
+### Vite Dev Proxy
+
+Development proxies handle CORS for exchange APIs:
+- `/api/upbit` → `https://api.upbit.com`
+- `/api/binance` → `https://api.binance.com`
+- `/bapi` → `https://www.binance.com`
+
+Vite root is `./src` (not project root); build output goes to `../dist`.
 
 ## Technical Constraints
 
@@ -164,10 +173,13 @@ yarn install
 
 - TypeScript for compile-time checks
 - ESLint configuration (react-app preset)
-- Prettier for code formatting (.prettierrc.yml)
+- Prettier for code formatting (.prettierrc.yml: printWidth 1000, singleQuote)
+- No test runner configured (test libraries installed but no test script in package.json)
 
 ### Version Control
 
 - Git repository
 - GitHub remote: https://github.com/Epsilonely/ticksnap.git
 - .gitignore configured for node_modules, dist, etc.
+- Memory Bank docs in `docs/memory-bank/` (shared between Cline and Claude Code)
+- `CLAUDE.md` provides Claude Code project context and references Memory Bank
