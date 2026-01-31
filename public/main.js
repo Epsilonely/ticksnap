@@ -400,57 +400,6 @@ ipcMain.handle('binance-get-accounts', async (event, { apiKey, apiSecret }) => {
   });
 });
 
-// 바이낸스 QR 로그인 - Precheck
-ipcMain.handle('binance-qr-precheck', async () => {
-  return new Promise((resolve) => {
-    try {
-      console.log('🔐 바이낸스 QR Precheck 시작...');
-
-      const postData = JSON.stringify({ bizType: 'qrcode_login' });
-
-      const options = {
-        hostname: 'accounts.binance.com',
-        path: '/bapi/accounts/v1/public/account/security/request/precheck',
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Content-Length': Buffer.byteLength(postData),
-        },
-      };
-
-      const req = https.request(options, (res) => {
-        let data = '';
-
-        res.on('data', (chunk) => {
-          data += chunk;
-        });
-
-        res.on('end', () => {
-          try {
-            const result = JSON.parse(data);
-            console.log('✅ Precheck 성공:', result);
-            resolve({ success: true, data: result.data });
-          } catch (error) {
-            console.error('❌ Precheck 응답 파싱 오류:', error);
-            resolve({ success: false, error: error.message });
-          }
-        });
-      });
-
-      req.on('error', (error) => {
-        console.error('❌ Precheck 요청 오류:', error);
-        resolve({ success: false, error: error.message });
-      });
-
-      req.write(postData);
-      req.end();
-    } catch (error) {
-      console.error('❌ Precheck 실패:', error);
-      resolve({ success: false, error: error.message });
-    }
-  });
-});
-
 
 // REST API로 바이낸스 Futures 자산 조회
 ipcMain.handle('binance-get-futures-accounts', async (event, { apiKey, apiSecret }) => {

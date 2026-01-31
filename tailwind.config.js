@@ -4,7 +4,7 @@ module.exports = {
   safelist: ['text-price-rise', 'text-price-fall', 'text-price-unchanged'],
   theme: {
     extend: {
-      fontFaminly: {
+      fontFamily: {
         pretendard: ['Pretendard'],
         righteous: ['Righteous', 'Pretendard'],
         spoqahansans: ['SpoqaHanSans'],

@@ -1,7 +1,5 @@
 import axios from 'axios';
 
-type IntervalType = 'tick' | '1' | '5' | '15' | '1hour' | '4hour' | 'day' | 'week';
-
 interface BinanceSymbolInfo {
   symbol: string;
   status: string;
@@ -32,21 +30,6 @@ interface BinanceTickerData {
   openTime: number; // 시작 시간
   closeTime: number; // 종료 시간
   count: number; // 거래 횟수
-}
-
-interface BinanceCandleData {
-  openTime: number; // 시작 시간
-  open: string; // 시가
-  high: string; // 고가
-  low: string; // 저가
-  close: string; // 종가
-  volume: string; // 거래량
-  closeTime: number; // 종료 시간
-  quoteAssetVolume: string; // 거래대금
-  numberOfTrades: number; // 거래 횟수
-  takerBuyBaseAssetVolume: string; // Taker 매수 거래량
-  takerBuyQuoteAssetVolume: string; // Taker 매수 거래대금
-  ignore: string; // 무시
 }
 
 // 바이낸스 Futures USDT 무기한 계약 목록 가져오기
@@ -80,50 +63,7 @@ export const fetchBinanceTickers = async (symbols?: string[]): Promise<BinanceTi
   }
 };
 
-// 바인낸스 캔들 데이터 가져오기
-export const fetchBinanceCandles = async (symbol: string, interval: IntervalType = '1', limit: number = 30): Promise<BinanceCandleData[]> => {
-  try {
-    // 업비트 인터벌을 바인낸스 인터벌로 변환
-    let binanceInterval = '1m';
-    switch (interval) {
-      case 'tick':
-        // 바인낸스는 틱 데이터를 캔들로 제공하지 않음
-        return [];
-      case '1':
-        binanceInterval = '1m';
-        break;
-      case '5':
-        binanceInterval = '5m';
-        break;
-      case '15':
-        binanceInterval = '15m';
-        break;
-      case '1hour':
-        binanceInterval = '1h';
-        break;
-      case '4hour':
-        binanceInterval = '4h';
-        break;
-      case 'day':
-        binanceInterval = '1d';
-        break;
-      case 'week':
-        binanceInterval = '1w';
-        break;
-      default:
-        binanceInterval = '1m';
-    }
-
-    const response = await axios.get<BinanceCandleData[]>(`/fapi/v1/klines?symbol=${symbol}&interval=${binanceInterval}&limit=${limit}`);
-
-    return response.data;
-  } catch (error) {
-    console.error('Failed to fetch Binance candles:', error);
-    return [];
-  }
-};
-
-// 바인낸스 데이터를 업비트 형식으로 변환하는 유틸리티 함수들
+// 바인낸스 데이터를 업비트 형식으로 변환하는 유틸리티 함수
 export const convertBinanceTickerToUpbitFormat = (binanceTicker: BinanceTickerData) => {
   const changeRate = parseFloat(binanceTicker.priceChangePercent) / 100;
   const changePrice = parseFloat(binanceTicker.priceChange);
@@ -140,21 +80,3 @@ export const convertBinanceTickerToUpbitFormat = (binanceTicker: BinanceTickerDa
     acc_trade_price_24h: parseFloat(binanceTicker.quoteVolume),
   };
 };
-
-export const convertBinanceCandleToUpbitFormat = (binanceCandle: BinanceCandleData, symbol: string) => {
-  return {
-    market: symbol,
-    candle_date_time_utc: new Date(binanceCandle.openTime).toISOString(),
-    candle_date_time_kst: new Date(binanceCandle.openTime + 9 * 60 * 60 * 1000).toISOString(),
-    opening_price: parseFloat(binanceCandle.open),
-    high_price: parseFloat(binanceCandle.high),
-    low_price: parseFloat(binanceCandle.low),
-    trade_price: parseFloat(binanceCandle.close),
-    timestamp: binanceCandle.openTime,
-    candle_acc_trade_price: parseFloat(binanceCandle.quoteAssetVolume),
-    candle_acc_trade_volume: parseFloat(binanceCandle.volume),
-    unit: 1, // 기본값
-  };
-};
-
-export type { BinanceTickerData, BinanceCandleData, BinanceSymbolInfo };

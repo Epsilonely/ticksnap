@@ -32,18 +32,8 @@ const coinSlice = createSlice({
     selectCoin: (state, action: PayloadAction<string>) => {
       state.selectedCoin = action.payload;
     },
-    
-    // 로딩 상태 설정
-    setLoading: (state, action: PayloadAction<boolean>) => {
-      state.loading = action.payload;
-    },
-    
-    // 에러 설정
-    setError: (state, action: PayloadAction<string | null>) => {
-      state.error = action.payload;
-    },
   },
 });
 
-export const { setUnifiedCoins, selectCoin, setLoading, setError } = coinSlice.actions;
+export const { setUnifiedCoins, selectCoin } = coinSlice.actions;
 export default coinSlice.reducer;

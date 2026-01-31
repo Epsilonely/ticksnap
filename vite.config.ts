@@ -17,11 +17,6 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api\/binance/, ''),
       },
-      '/bapi': {
-        target: 'https://www.binance.com',
-        changeOrigin: true,
-        secure: false,
-      },
       '/fapi': {
         target: 'https://fapi.binance.com',
         changeOrigin: true,

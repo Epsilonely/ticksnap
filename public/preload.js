@@ -26,13 +26,3 @@ contextBridge.exposeInMainWorld('binanceAPI', {
   getFuturesAccounts: (apiKey, apiSecret) => ipcRenderer.invoke('binance-get-futures-accounts', { apiKey, apiSecret }),
   getFuturesPositions: (apiKey, apiSecret) => ipcRenderer.invoke('binance-get-futures-positions', { apiKey, apiSecret }),
 });
-
-// 바이낸스 QR 로그인 API
-contextBridge.exposeInMainWorld('binanceQRLoginAPI', {
-  precheck: () => ipcRenderer.invoke('binance-qr-precheck'),
-  checkResult: (sessionId) => ipcRenderer.invoke('binance-qr-check-result', { sessionId }),
-  getQRCode: (random, sessionId) => ipcRenderer.invoke('binance-qr-get-code', { random, sessionId }),
-  queryStatus: (qrCode, random, sessionId) => ipcRenderer.invoke('binance-qr-query-status', { qrCode, random, sessionId }),
-  isLoggedIn: () => ipcRenderer.invoke('binance-is-logged-in'),
-  logout: () => ipcRenderer.invoke('binance-logout'),
-});

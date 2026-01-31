@@ -657,11 +657,6 @@ export class DataManager {
     }
   }
 
-  // 통합 코인 데이터 가져오기
-  getUnifiedCoins(): UnifiedCoinData[] {
-    return this.unifiedCoins;
-  }
-
   // 정리
   destroy(): void {
     if (this.restApiInterval) {

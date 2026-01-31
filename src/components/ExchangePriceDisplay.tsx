@@ -32,18 +32,6 @@ const ExchangePriceDisplay: React.FC<ExchangePriceDisplayProps> = ({ exchange, p
         const isUp = price > prevPrice;
         const newAnimationClass = isUp ? 'price-up-animation' : 'price-down-animation';
 
-        // 디버깅 로그
-        // console.log(`💰 ${coinSymbol}-${exchange} 가격 변동:`, {
-        //   이전가격: prevPrice,
-        //   현재가격: price,
-        //   차이: (price - prevPrice).toFixed(8),
-        //   방향: isUp ? '상승' : '하락',
-        //   애니메이션: newAnimationClass,
-        //   전날대비: change,
-        //   CSS클래스: newAnimationClass === 'price-up-animation' ? '빨간색테두리' : '파란색테두리',
-        //   타임스탬프: new Date().toLocaleTimeString()
-        // });
-
         // 즉시 애니메이션 적용
         setAnimationClass(newAnimationClass);
 
@@ -56,7 +44,7 @@ const ExchangePriceDisplay: React.FC<ExchangePriceDisplayProps> = ({ exchange, p
     }
 
     prevPriceRef.current = price;
-  }, [price, uniqueKey, coinSymbol, exchange, change]); // 디버깅을 위한 의존성 추가
+  }, [price, uniqueKey, coinSymbol, exchange, change]);
 
   // 컴포넌트 언마운트 시 타이머 정리
   useEffect(() => {
