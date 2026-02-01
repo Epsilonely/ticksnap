@@ -79,16 +79,11 @@ function App() {
             <Block type={BlockType.BLOCK_TY_MARKET} />
           </div>
 
-          <div className="flex-col w-full gap-2">
-            {/* 상단 행 */}
-            <div>
-              <Block type={BlockType.BLOCK_TY_ALARM_HISTORY} />
-            </div>
-
-            {/* 중간 행: 탭이 있는 블록 */}
-            <div className="flex flex-col w-full max-w-[1900px] min-h-[680px] max-h-[1000px] items-center overflow-hidden">
+          <div className="flex flex-col w-full h-full">
+            {/* 탭이 있는 블록 */}
+            <div className="flex flex-col w-full h-full">
               {/* 탭 헤더 */}
-              <div className="flex bg-[#F5F5F5] font-semibold rounded-2xl mb-2">
+              <div className="flex-shrink-0 flex w-fit self-center bg-[#F5F5F5] font-semibold rounded-2xl mb-2">
                 <button className={`flex-1 m-1 px-6 py-2 text-base transition-colors rounded-xl ${activeMiddleTab === 'exchange' ? 'bg-white text-[#212833] font-bold' : 'text-[#999999] hover:text-[#FFFFFF] hover:bg-[#999999]'}`} onClick={() => setActiveMiddleTab('exchange')}>
                   Trader
                 </button>
@@ -97,8 +92,8 @@ function App() {
                 </button>
               </div>
 
-              {/* 탭 컨텐츠 */}
-              <div className="h-[calc(100%-52px)]">
+              {/* 탭 컨텐츠 - 남은 공간 모두 차지 */}
+              <div className="flex-1 min-h-0 w-full">
                 {(() => {
                   switch (activeMiddleTab) {
                     case 'exchange':
@@ -110,11 +105,6 @@ function App() {
                   }
                 })()}
               </div>
-            </div>
-
-            {/* 하단 행: 전체 너비 블록 */}
-            <div>
-              <Block />
             </div>
           </div>
         </div>
