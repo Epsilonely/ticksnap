@@ -2,7 +2,9 @@
 
 ## Current Work Focus
 
-TradingView 차트 통합 완료. 다음 단계: Lightweight Charts로 교체하여 실시간 차트 구현 예정.
+TradingView 차트 통합 완료. 다음 단계: Lightweight Charts로 교체하여 **바이낸스 Futures 전용** 실시간 차트 구현 예정.
+
+**중요 결정**: 차트는 바이낸스 Futures 데이터만 표시. 업비트 차트는 구현하지 않음.
 
 ## Recent Changes
 
@@ -44,7 +46,7 @@ TradingView 차트 통합 완료. 다음 단계: Lightweight Charts로 교체하
   - Props: `symbol`, `theme`, `interval`
   - `useEffect` + `useRef`로 스크립트 라이프사이클 관리
   - `key={coinSymbol}`로 코인 전환 시 리마운트
-  - 심볼 매핑: Binance 있으면 `BINANCE:${symbol}USDT`, 없으면 `UPBIT:${symbol}KRW`
+  - 심볼 매핑: `BINANCE:${symbol}USDT` (바이낸스 Futures 전용)
 - **CoinDetailBlock에 TradingViewChart 연결**
   - CoinInfo, Trading 컴포넌트 임시 제거 (가짜 데이터 문제)
   - 가격 색상 토큰 `text-red-500`/`text-blue-500` → `text-price-rise`/`text-price-fall`로 수정
@@ -104,12 +106,13 @@ Left sidebar: MarketBlock
 
 ## Next Steps
 
-1. **[계획] Lightweight Charts로 교체** — 실시간 차트 구현
+1. **[계획] Lightweight Charts로 교체** — 바이낸스 Futures 전용 실시간 차트 구현
    - `npm install lightweight-charts` 설치
-   - `LightweightChart.tsx` 컴포넌트 생성
-   - DataManager WebSocket 데이터 직접 연결
-   - 초기 데이터: REST API로 캔들 데이터 로드
-   - 실시간 업데이트: WebSocket 가격 변동 시 차트 업데이트
+   - `LightweightChart.tsx` 컴포넌트 생성 (바이낸스 Futures 데이터만)
+   - DataManager의 바이낸스 WebSocket 데이터 직접 연결
+   - 초기 데이터: 바이낸스 Futures REST API로 캔들 데이터 로드
+   - 실시간 업데이트: 바이낸스 WebSocket 가격 변동 시 차트 업데이트
+   - **업비트 차트는 구현하지 않음** (바이낸스 Futures만)
 2. CoinDetailBlock에 양쪽 거래소 가격 표시 (ExchangePriceDisplay 재활용)
 3. CoinInfo 간소화 (가짜 매수/매도 데이터 제거, 실제 거래량만)
 4. Trading stub 개선

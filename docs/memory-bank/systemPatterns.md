@@ -161,7 +161,8 @@ Tab navigation managed by local state in App.tsx (`activeMiddleTab`):
 - **PriceDisplay.tsx:** Formatted price with decimal color coding
 - **Scrollbar.tsx:** Custom scrollbar styling
 - **ExchangePriceDisplay.tsx:** Exchange logo + animated price + change %
-- Chart component planned for reimplementation
+- **TradingViewChart.tsx:** Current chart implementation (to be replaced)
+- **LightweightChart.tsx:** Planned chart component — Binance Futures only (Upbit chart will not be implemented)
 
 ## Critical Implementation Paths
 

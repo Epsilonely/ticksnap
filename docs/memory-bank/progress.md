@@ -135,7 +135,8 @@ Core features are implemented and functional. The app successfully aggregates re
 ### Known Limitations
 
 - **TradingView 가격 업데이트 지연** — 무료 위젯은 지연된 데이터 제공 (수 초~수십 초)
-  - 해결 계획: Lightweight Charts로 교체하여 DataManager WebSocket 데이터 직접 사용
+  - 해결 계획: Lightweight Charts로 교체하여 바이낸스 Futures WebSocket 데이터 직접 사용
+  - **차트는 바이낸스 Futures 전용** (업비트 차트는 구현하지 않음)
 
 ## Known Issues
 
@@ -208,12 +209,13 @@ Core features are implemented and functional. The app successfully aggregates re
 
 ### In Progress
 
-- [ ] **Lightweight Charts 통합** — 실시간 차트 구현
+- [ ] **Lightweight Charts 통합** — 바이낸스 Futures 전용 실시간 차트 구현
   - npm 패키지 설치
-  - LightweightChart 컴포넌트 생성
-  - DataManager WebSocket 데이터 연결
-  - 초기 캔들 데이터 로드 (REST API)
-  - 실시간 가격 업데이트 (WebSocket)
+  - LightweightChart 컴포넌트 생성 (바이낸스 Futures 전용)
+  - 바이낸스 Futures WebSocket 데이터 연결
+  - 초기 캔들 데이터 로드 (바이낸스 Futures REST API)
+  - 실시간 가격 업데이트 (바이낸스 WebSocket)
+  - **업비트 차트는 구현하지 않음**
 
 ### Upcoming
 

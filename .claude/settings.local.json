@@ -1,7 +1,18 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(test:*)",
+      "Bash(npx tsc:*)",
+      "mcp__ide__getDiagnostics",
+      "Bash(npm i:*)",
+      "Bash(sudo npm i:*)",
+      "Bash(node --version:*)",
+      "Bash(npm:*)",
+      "Bash(nvm install:*)",
+      "Bash(curl:*)",
+      "Bash(bash)",
+      "Bash(brew list:*)"
     ]
   }
 }
