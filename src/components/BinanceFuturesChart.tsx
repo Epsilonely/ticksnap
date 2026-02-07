@@ -102,6 +102,10 @@ export default function BinanceFuturesChart({ symbol, theme = 'light' }: Binance
         background: { type: ColorType.Solid, color: isDark ? '#1E1E1E' : '#FFFFFF' },
         textColor: isDark ? '#D9D9D9' : '#26262C',
         fontFamily: 'Pretendard, sans-serif',
+        panes: {
+          enableResize: true,
+          separatorColor: isDark ? '#2B2B43' : '#E6E6E6',
+        },
       },
       grid: {
         vertLines: { color: isDark ? '#2B2B43' : '#E6E6E6' },
@@ -129,12 +133,10 @@ export default function BinanceFuturesChart({ symbol, theme = 'light' }: Binance
       wickUpColor: '#639d01',
     });
 
-    const volumeSeries = chart.addSeries(HistogramSeries, {
+    const volumePane = chart.addPane();
+    volumePane.setStretchFactor(0.25);
+    const volumeSeries = volumePane.addSeries(HistogramSeries, {
       priceFormat: { type: 'volume' },
-      priceScaleId: 'volume',
-    });
-    volumeSeries.priceScale().applyOptions({
-      scaleMargins: { top: 0.8, bottom: 0 },
     });
 
     chartRef.current = chart;
