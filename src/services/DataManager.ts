@@ -48,7 +48,6 @@ export class DataManager {
   private restApiInterval: NodeJS.Timeout | null = null;
   private upbitWebSocket: WebSocket | null = null;
   private binanceWebSocket: WebSocket | null = null;
-  private favoriteCoins: string[] = [];
 
   // Redux store 참조
   private dispatch: AppDispatch | null = null;
@@ -355,14 +354,6 @@ export class DataManager {
         const mapping = this.coinMapping.get(coin.coinSymbol);
         if (!mapping) return coin;
 
-        // 관심 코인이고 웹소켓이 연결되어 있으면 REST API 업데이트 스킵
-        const isFavorite = this.favoriteCoins.includes(coin.coinSymbol);
-        const hasWebSocket = this.upbitWebSocket?.readyState === WebSocket.OPEN || this.binanceWebSocket?.readyState === WebSocket.OPEN;
-
-        if (isFavorite && hasWebSocket) {
-          return coin; // 웹소켓이 실시간 업데이트하므로 스킵
-        }
-
         const updatedCoin = { ...coin };
 
         // 업비트 데이터 업데이트
@@ -468,28 +459,18 @@ export class DataManager {
     }
   }
 
-  // 관심 코인 업데이트 (웹소켓 연결용)
-  updateFavoriteCoins(favoriteCoins: string[]): void {
-    this.favoriteCoins = favoriteCoins;
-    this.connectWebSockets();
-  }
-
-  // 웹소켓 연결 (등록 코인 + 관심 코인)
+  // 웹소켓 연결 (등록 코인)
   private connectWebSockets(): void {
     // 기존 웹소켓 연결 해제
     this.disconnectWebSockets();
 
-    // 등록 코인 + 관심 코인 합치기 (중복 제거)
-    const allCoinsSet = new Set([...this.registeredCoins, ...this.favoriteCoins]);
-    const allCoins = Array.from(allCoinsSet);
-
-    if (allCoins.length === 0) return;
+    if (this.registeredCoins.length === 0) return;
 
     // 심볼 매핑
     const upbitSymbols: string[] = [];
     const binanceSymbols: string[] = [];
 
-    allCoins.forEach((coinSymbol) => {
+    this.registeredCoins.forEach((coinSymbol) => {
       const mapping = this.coinMapping.get(coinSymbol);
       if (mapping?.upbit) upbitSymbols.push(mapping.upbit);
       if (mapping?.binance) binanceSymbols.push(mapping.binance);
@@ -508,7 +489,7 @@ export class DataManager {
       this.connectBinanceWebSocket(binanceSymbols);
     }
 
-    console.log(`✅ 웹소켓 연결 (등록+관심): 업비트 ${Math.min(upbitSymbols.length, 15)}개, 바이낸스 ${binanceSymbols.length}개`);
+    console.log(`✅ 웹소켓 연결 (등록): 업비트 ${Math.min(upbitSymbols.length, 15)}개, 바이낸스 ${binanceSymbols.length}개`);
   }
 
   // 업비트 웹소켓 연결
@@ -546,9 +527,7 @@ export class DataManager {
     this.upbitWebSocket.onclose = () => {
       console.log('업비트 웹소켓 연결 종료, 5초 후 재연결 시도...');
       setTimeout(() => {
-        if (this.favoriteCoins.length > 0) {
-          this.connectUpbitWebSocket(symbols);
-        }
+        this.connectUpbitWebSocket(symbols);
       }, 5000);
     };
   }
@@ -582,9 +561,7 @@ export class DataManager {
     this.binanceWebSocket.onclose = () => {
       console.log('바이낸스 웹소켓 연결 종료, 5초 후 재연결 시도...');
       setTimeout(() => {
-        if (this.favoriteCoins.length > 0) {
-          this.connectBinanceWebSocket(symbols);
-        }
+        this.connectBinanceWebSocket(symbols);
       }, 5000);
     };
   }

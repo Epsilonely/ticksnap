@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { createChart, CandlestickSeries, HistogramSeries, ColorType } from 'lightweight-charts';
-import type { IChartApi, ISeriesApi, CandlestickData, Time, LogicalRange } from 'lightweight-charts';
+import { createChart, CandlestickSeries, HistogramSeries, ColorType, createSeriesMarkers, LineStyle } from 'lightweight-charts';
+import type { IChartApi, ISeriesApi, ISeriesMarkersPluginApi, IPriceLine, CandlestickData, Time, LogicalRange } from 'lightweight-charts';
 import { fetchBinanceKlines, KlineInterval } from '../services/BinanceApi';
 
 interface BinanceFuturesChartProps {
@@ -24,6 +24,9 @@ export default function BinanceFuturesChart({ symbol, theme = 'light' }: Binance
   const volumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const markersPluginRef = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
+  const highPriceLineRef = useRef<IPriceLine | null>(null);
+  const lowPriceLineRef = useRef<IPriceLine | null>(null);
 
   // 과거 데이터 로딩 관련 refs
   const allCandlesRef = useRef<CandlestickData[]>([]);
@@ -77,6 +80,77 @@ export default function BinanceFuturesChart({ symbol, theme = 'light' }: Binance
     isLoadingMoreRef.current = false;
   }, []);
 
+  // 보이는 범위의 최고/최저가 마커 + price line 업데이트
+  const updateHighLowMarkers = useCallback(() => {
+    const chart = chartRef.current;
+    const series = candlestickSeriesRef.current;
+    if (!chart || !series || !markersPluginRef.current) return;
+
+    const logicalRange = chart.timeScale().getVisibleLogicalRange();
+    if (!logicalRange) return;
+
+    const candles = allCandlesRef.current;
+    if (candles.length === 0) return;
+
+    const from = Math.max(0, Math.floor(logicalRange.from));
+    const to = Math.min(candles.length - 1, Math.ceil(logicalRange.to));
+    if (from > to) return;
+
+    let highIdx = from;
+    let lowIdx = from;
+
+    for (let i = from + 1; i <= to; i++) {
+      if (candles[i].high > candles[highIdx].high) highIdx = i;
+      if (candles[i].low < candles[lowIdx].low) lowIdx = i;
+    }
+
+    // 마커: 화살표만 (텍스트 없음)
+    const highMarker = {
+      time: candles[highIdx].time,
+      position: 'aboveBar' as const,
+      color: '#639d01',
+      shape: 'arrowDown' as const,
+    };
+
+    const lowMarker = {
+      time: candles[lowIdx].time,
+      position: 'belowBar' as const,
+      color: '#ea0070',
+      shape: 'arrowUp' as const,
+    };
+
+    markersPluginRef.current?.setMarkers(highIdx <= lowIdx ? [highMarker, lowMarker] : [lowMarker, highMarker]);
+
+    // 기존 price line 제거
+    if (highPriceLineRef.current) {
+      series.removePriceLine(highPriceLineRef.current);
+      highPriceLineRef.current = null;
+    }
+    if (lowPriceLineRef.current) {
+      series.removePriceLine(lowPriceLineRef.current);
+      lowPriceLineRef.current = null;
+    }
+
+    // price line: y축에 가격 표시 (점선)
+    highPriceLineRef.current = series.createPriceLine({
+      price: candles[highIdx].high,
+      color: '#639d01',
+      lineWidth: 1,
+      lineStyle: LineStyle.Dashed,
+      axisLabelVisible: true,
+      lineVisible: true,
+    });
+
+    lowPriceLineRef.current = series.createPriceLine({
+      price: candles[lowIdx].low,
+      color: '#ea0070',
+      lineWidth: 1,
+      lineStyle: LineStyle.Dashed,
+      axisLabelVisible: true,
+      lineVisible: true,
+    });
+  }, []);
+
   // visible range 변경 핸들러
   const handleVisibleRangeChange = useCallback(
     (logicalRange: LogicalRange | null) => {
@@ -86,8 +160,10 @@ export default function BinanceFuturesChart({ symbol, theme = 'light' }: Binance
       if (barsInfo !== null && barsInfo.barsBefore < 10) {
         loadOlderData(symbol, interval);
       }
+
+      updateHighLowMarkers();
     },
-    [symbol, interval, loadOlderData],
+    [symbol, interval, loadOlderData, updateHighLowMarkers],
   );
 
   // 차트 인스턴스 생성 & 리사이즈 관리
@@ -119,6 +195,7 @@ export default function BinanceFuturesChart({ symbol, theme = 'light' }: Binance
         borderColor: isDark ? '#2B2B43' : '#E6E6E6',
         timeVisible: true,
         secondsVisible: false,
+        rightOffset: 7,
       },
       width: container.clientWidth,
       height: container.clientHeight,
@@ -142,6 +219,7 @@ export default function BinanceFuturesChart({ symbol, theme = 'light' }: Binance
     chartRef.current = chart;
     candlestickSeriesRef.current = candleSeries;
     volumeSeriesRef.current = volumeSeries;
+    markersPluginRef.current = createSeriesMarkers(candleSeries);
 
     // 컨테이너 리사이즈 시 차트 자동 조절
     const resizeObserver = new ResizeObserver((entries) => {
@@ -158,6 +236,10 @@ export default function BinanceFuturesChart({ symbol, theme = 'light' }: Binance
       chartRef.current = null;
       candlestickSeriesRef.current = null;
       volumeSeriesRef.current = null;
+      markersPluginRef.current?.detach();
+      markersPluginRef.current = null;
+      highPriceLineRef.current = null;
+      lowPriceLineRef.current = null;
     };
   }, [theme]);
 
@@ -181,7 +263,7 @@ export default function BinanceFuturesChart({ symbol, theme = 'light' }: Binance
         const k = msg.k;
         if (!k) return;
 
-        const time = (Math.floor(k.t / 1000)) as unknown as Time;
+        const time = Math.floor(k.t / 1000) as unknown as Time;
         const open = parseFloat(k.o);
         const close = parseFloat(k.c);
 
@@ -259,7 +341,7 @@ export default function BinanceFuturesChart({ symbol, theme = 'light' }: Binance
       volumeSeriesRef.current?.setData(volumes);
       const totalBars = candles.length;
       chartRef.current?.timeScale().setVisibleLogicalRange({
-        from: totalBars - 80,
+        from: totalBars - 50,
         to: totalBars + 5,
       });
 

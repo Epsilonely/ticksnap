@@ -23,28 +23,6 @@ function App() {
         // DataManager 초기화
         await dataManager.initialize();
 
-        // localStorage에서 기존 관심 코인 불러와서 웹소켓 연결
-        const storedFavorites = localStorage.getItem('favorites');
-        if (storedFavorites) {
-          const favorites = JSON.parse(storedFavorites);
-          console.log('기존 관심 코인 복원:', favorites);
-
-          // 관심 코인 심볼들을 추출 (코인 심볼로 변환)
-          const favoriteSymbols = favorites.map((fav: string) => {
-            // KRW-BTC -> BTC, BTCUSDT -> BTC 형태로 변환
-            if (fav.startsWith('KRW-')) {
-              return fav.replace('KRW-', '');
-            }
-            if (fav.endsWith('USDT')) {
-              return fav.replace('USDT', '');
-            }
-            return fav;
-          });
-
-          // DataManager에 관심 코인 전달하여 웹소켓 연결
-          dataManager.updateFavoriteCoins(favoriteSymbols);
-        }
-
         console.log('앱 초기화 완료');
       } catch (error) {
         console.error('앱 초기화 실패:', error);

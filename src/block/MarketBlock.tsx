@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../store';
 import { selectCoin } from '../store/slices/coinSlice';
@@ -7,31 +7,15 @@ import { dataManager } from '../services/DataManager';
 import Scrollbar from '../common/Scrollbar';
 import ExchangePriceDisplay from '../components/ExchangePriceDisplay';
 
-type FilterTab = 'mycoins' | 'favorites' | 'holdings';
+type FilterTab = 'mycoins' | 'holdings';
 
 function MarketBlock() {
   const dispatch = useDispatch<AppDispatch>();
   const { unifiedCoins, loading, error, selectedCoin } = useSelector((state: RootState) => state.coin);
-  const favorites = useSelector((state: RootState) => state.favorite.favorites);
   const registeredCoins = useSelector((state: RootState) => state.registeredCoin.registeredCoins);
   const [activeTab, setActiveTab] = useState<FilterTab>('mycoins');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
-
-  // 관심 코인 변경 시 DataManager에 알림
-  useEffect(() => {
-    const favoriteSymbols = favorites.map((fav) => {
-      if (fav.startsWith('KRW-')) {
-        return fav.replace('KRW-', '');
-      }
-      if (fav.endsWith('USDT')) {
-        return fav.replace('USDT', '');
-      }
-      return fav;
-    });
-
-    dataManager.updateFavoriteCoins(favoriteSymbols);
-  }, [favorites]);
 
   // 검색 결과
   const searchResults = useMemo(() => {
@@ -50,8 +34,6 @@ function MarketBlock() {
   // 탭별 데이터 필터링
   const getFilteredData = () => {
     switch (activeTab) {
-      case 'favorites':
-        return unifiedCoins.filter((coin) => favorites.includes(coin.upbit?.symbol || '') || favorites.includes(coin.binance?.symbol || ''));
       case 'holdings':
         return [];
       case 'mycoins':
@@ -138,9 +120,6 @@ function MarketBlock() {
             <button className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'mycoins' ? 'bg-white text-[#333] border-b-2 border-[#007bff]' : 'text-[#666] hover:text-[#333] hover:bg-[#f1f3f4]'}`} onClick={() => setActiveTab('mycoins')}>
               내 코인
             </button>
-            <button className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'favorites' ? 'bg-white text-[#333] border-b-2 border-[#007bff]' : 'text-[#666] hover:text-[#333] hover:bg-[#f1f3f4]'}`} onClick={() => setActiveTab('favorites')}>
-              관심
-            </button>
             <button className={`flex-1 px-4 py-2 text-sm font-medium transition-colors ${activeTab === 'holdings' ? 'bg-white text-[#333] border-b-2 border-[#007bff]' : 'text-[#666] hover:text-[#333] hover:bg-[#f1f3f4]'}`} onClick={() => setActiveTab('holdings')}>
               보유
             </button>
@@ -156,8 +135,6 @@ function MarketBlock() {
           <Scrollbar className="h-[calc(100%-1rem)] text-[14px]">
             {filteredData.length === 0 && activeTab === 'holdings' ? (
               <div className="flex items-center justify-center h-32 text-gray-500">보유 코인 기능은 아직 개발 중입니다.</div>
-            ) : filteredData.length === 0 && activeTab === 'favorites' ? (
-              <div className="flex items-center justify-center h-32 text-gray-500">관심 등록된 코인이 없습니다.</div>
             ) : filteredData.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-32 text-gray-500 gap-2">
                 <span>등록된 코인이 없습니다.</span>
@@ -167,7 +144,6 @@ function MarketBlock() {
               [...filteredData]
                 .sort((a, b) => b.maxTradeVolume - a.maxTradeVolume)
                 .map((coin) => {
-                  const isFavorite = favorites.includes(coin.upbit?.symbol || '') || favorites.includes(coin.binance?.symbol || '');
                   const coinIconUrl = `https://static.upbit.com/logos/${coin.coinSymbol}.png`;
                   const selectSymbol = coin.upbit?.symbol || coin.binance?.symbol || coin.coinSymbol;
 
@@ -177,7 +153,7 @@ function MarketBlock() {
                       <div className="flex items-center min-w-[154px]">
                         <div className="flex flex-col gap-1">
                           <div className="flex items-center gap-1.5">
-                            <div className={`w-[20px] h-[20px] overflow-hidden ${isFavorite ? 'gradient-outline' : ''}`}>
+                            <div className="w-[20px] h-[20px] overflow-hidden">
                               <img src={coinIconUrl} alt={coin.name} className="w-full h-full object-cover overflow-hidden" />
                             </div>
                             <div className="font-semibold text-[14px] text-[#26262C]">{coin.name}</div>

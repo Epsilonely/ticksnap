@@ -1,27 +1,14 @@
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { RootState } from '../store';
-import { toggleFavorite } from '../store/slices/favoriteSlice';
 import BinanceFuturesChart from '../components/BinanceFuturesChart';
 import ExchangePriceDisplay from '../components/ExchangePriceDisplay';
 
 function CoinDetailBlock() {
-  const dispatch = useDispatch();
   const selectedCoin = useSelector((state: RootState) => state.coin.selectedCoin);
   const unifiedCoins = useSelector((state: RootState) => state.coin.unifiedCoins);
-  const favorites = useSelector((state: RootState) => state.favorite.favorites);
-
-  // 현재 선택된 코인이 즐겨찾기에 있는지 확인
-  const isFavorite = selectedCoin ? favorites.includes(selectedCoin) : false;
 
   // USDT/KRW 환율
   const usdtToKrw = useSelector((state: RootState) => state.coin.usdtKrwRate);
-
-  // 즐겨찾기 토글 핸들러
-  const handleToggleFavorite = () => {
-    if (selectedCoin) {
-      dispatch(toggleFavorite(selectedCoin));
-    }
-  };
 
   if (!selectedCoin) {
     return (
@@ -55,9 +42,6 @@ function CoinDetailBlock() {
       {/* 헤더 - 코인 이름 */}
       <div className="flex-shrink-0 flex justify-between items-center mb-4">
         <h2 className="text-[24px] font-bold text-[#26262C]">이더리움 {selectedCoinData.coinSymbol}</h2>
-        <button onClick={handleToggleFavorite} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${isFavorite ? 'bg-[#4C4C57] text-[#FFFFFF] hover:bg-[#26262C]' : 'bg-[#5FC26A] text-[#FFFFFF] hover:bg-[#4CAE57]'}`}>
-          {isFavorite ? '관심 해제' : '관심 등록'}
-        </button>
       </div>
 
       {/* 메인 가격 표시 영역 */}

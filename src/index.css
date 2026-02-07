@@ -103,27 +103,3 @@ body {
 .text-price-unchanged {
   color: var(--color-unchanged) !important;
 }
-
-.gradient-outline {
-  border-radius: 50%;
-  outline: 3px outset;
-  outline-offset: -1px;
-  animation: oulineBlink 2s ease-in-out infinite;
-  flex-shrink: 0;
-}
-
-@keyframes oulineBlink {
-  0%,
-  100% {
-    outline-color: #3cd145;
-  }
-  70% {
-    outline-color: #41d6ff;
-  }
-  50% {
-    outline-color: #59b3fb;
-  }
-  30% {
-    outline-color: #47ef1d;
-  }
-}

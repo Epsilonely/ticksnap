@@ -2,32 +2,56 @@
 
 ## Current Work Focus
 
-Lightweight Charts real-time chart integration completed. CoinDetailBlock displays prices from both exchanges + kimchi premium.
+Chart UX improvements and feature cleanup. Favorites feature removed entirely — only registered coins remain.
 
 **Key Decision**: Chart displays Binance Futures data only. Upbit chart not implemented.
 
 ## Recent Changes
+
+### 2026.02.07 (Evening) — Chart UX Improvements + Favorites Removal ✅
+
+#### Completed Work
+
+- **Chart Initial Zoom Level** — `fitContent()` → `setVisibleLogicalRange()` (최근 50개 캔들)
+  - 500개 캔들 전체를 보여주던 줌아웃 문제 해결
+  - `rightOffset: 7` 추가로 마지막 캔들 오른쪽 여유 공간 확보
+- **Chart High/Low Price Markers** — 보이는 범위의 최고/최저가 동적 표시
+  - `createSeriesMarkers()` 플러그인으로 화살표 마커 (텍스트 없음)
+  - `createPriceLine()` 으로 y축에 가격 표시 (점선, 항상 보임)
+  - `subscribeVisibleLogicalRangeChange`로 줌/스크롤 시 동적 업데이트
+  - 과거 데이터 무한 스크롤과 공존 (같은 핸들러에서 처리)
+- **Favorites Feature Complete Removal** — 관심 코인 기능 전체 삭제
+  - Deleted: `src/store/slices/favoriteSlice.ts`
+  - `store/index.ts`: favoriteReducer 제거
+  - `App.tsx`: localStorage favorites 복원 로직 제거
+  - `MarketBlock.tsx`: "관심" 탭, favorites selector, DataManager 동기화 useEffect, isFavorite 스타일링 제거
+  - `CoinDetailBlock.tsx`: "관심 등록/해제" 버튼, toggleFavorite 핸들러, dispatch 제거
+  - `DataManager.ts`: `favoriteCoins` 프로퍼티, `updateFavoriteCoins()`, favorites WebSocket/REST 로직 제거
+
+#### Technical Decisions
+
+- **lightweight-charts v4+ markers**: `series.setMarkers()` 제거됨 → `createSeriesMarkers()` 플러그인 방식 사용
+- **Price line for labels**: 마커 텍스트가 차트 끝에서 잘리는 문제 → price line의 y축 라벨로 대체
+- **Favorites 제거**: 등록 코인 시스템이 favorites를 대체, WebSocket 연결은 등록 코인만 사용
 
 ### 2026.02.07 (PM) — Registered Coins WebSocket Migration + 10 Coin Limit ✅
 
 #### Completed Work
 
 - **Registered Coins WebSocket Migration** — Resolved REST API 429 error
-  - DataManager: Both registered + favorite coins now use WebSocket for real-time updates
-  - `connectWebSockets()`: Merges registered and favorite coins for WebSocket connection (deduplication)
+  - DataManager: Registered coins use WebSocket for real-time updates
   - Upbit: 15 coin limit (warning log if exceeded, only 15 connected)
   - Binance: No practical limit (stable up to 300)
   - REST API now only for initial load + USDT exchange rate (1-second polling maintained)
   - **Result**: Binance Futures API 429 error completely resolved ✅
 - **10 Coin Registration Limit** — MarketBlock.tsx
   - `handleRegister()`: Alert and block registration when exceeding 10 coins
-  - Safe operation within Upbit WebSocket 15-coin limit (10 registered + 5 favorites buffer)
+  - Safe operation within Upbit WebSocket 15-coin limit
 
 #### Technical Decisions
 
 - **Hybrid Approach Maintained**: WebSocket (real-time) + REST (initial load + exchange rate)
 - **Registration Limit**: 10 coins to safely operate within Upbit's 15-coin limit
-- **WebSocket Priority**: Registered/favorite coins use WebSocket for real-time updates, REST as backup
 
 ### 2026.02.07 (AM) — Lightweight Charts Integration + Kimchi Premium + Tab State Preservation ✅
 
@@ -86,7 +110,7 @@ Tab-based navigation structure (hidden pattern — both tabs always mounted):
 Left sidebar: MarketBlock
 
 - Search bar (top) — Search and register/unregister coins from all markets
-- Tabs: My Coins (registered) / Favorites (watchlist) / Holdings (not implemented)
+- Tabs: My Coins (registered) / Holdings (not implemented)
 
 ## Next Steps
 
@@ -109,7 +133,7 @@ Left sidebar: MarketBlock
 ### API Integration
 
 - **Binance Futures API** (`fapi.binance.com`) — Migrated from Spot to Futures
-- **Ticker WebSocket** (DataManager): Both registered + favorite coins via `wss://fstream.binance.com` `@ticker` stream
+- **Ticker WebSocket** (DataManager): Registered coins via `wss://fstream.binance.com` `@ticker` stream
 - **Kline WebSocket** (BinanceFuturesChart): Single selected coin `@kline_{interval}` stream
 - REST: 1-second polling (initial load + USDT rate only, WebSocket handles real-time updates)
 - Automatic reconnection (5-second retry)
@@ -136,7 +160,6 @@ Left sidebar: MarketBlock
 ### State Management
 
 - coinSlice: coin market data (unifiedCoins, selectedCoin, usdtKrwRate, loading, error)
-- favoriteSlice: favorites (persisted to localStorage)
 - registeredCoinSlice: registered coin list (persisted to localStorage, defaults: BTC/ETH/XRP/SOL/DOGE)
 
 ## Learnings and Project Insights
@@ -146,6 +169,8 @@ Left sidebar: MarketBlock
 - DataManager singleton is the core of ticker data flow — ~670 lines
 - Chart kline WebSocket is managed separately from DataManager (different concern)
 - lightweight-charts v4+ uses `addSeries(CandlestickSeries)` not `addCandlestickSeries()`
+- lightweight-charts v4+: `series.setMarkers()` 제거됨 → `createSeriesMarkers()` 플러그인 방식 사용
+- lightweight-charts markers 텍스트는 차트 끝에서 잘림 → price line y축 라벨로 대체
 - USDT must be fetched separately as exchange rate, NOT put in unifiedCoins (causes flickering in MarketBlock)
 - Tab content should use hidden CSS pattern instead of conditional rendering to preserve component state
 - Binance Futures kline WebSocket: `wss://fstream.binance.com/ws/{symbol}@kline_{interval}`

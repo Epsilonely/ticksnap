@@ -20,7 +20,7 @@
 - DataManager singleton for centralized ticker data orchestration
 - Binance Futures data normalization to Upbit format for unified processing
 - REST polling every 1 second (initial load + USDT exchange rate only)
-- Ticker WebSocket connections for registered + favorite coins (`wss://fstream.binance.com`)
+- Ticker WebSocket connections for registered coins (`wss://fstream.binance.com`)
 - Kline WebSocket for selected coin chart (`wss://fstream.binance.com/ws/{symbol}@kline_{interval}`)
 - Automatic WebSocket reconnection (5-second retry)
 - Registered coin system: 10 coin limit, real-time updates via WebSocket
@@ -35,6 +35,9 @@
 - Candlestick + volume histogram overlay
 - Auto-resize via ResizeObserver
 - Self-contained component (own REST + WebSocket, independent from DataManager)
+- Initial zoom: `setVisibleLogicalRange()` — 최근 50개 캔들 표시 (500개 전체 줌아웃 방지)
+- `rightOffset: 7` — 마지막 캔들 오른쪽 여유 공간
+- High/Low markers: `createSeriesMarkers()` 화살표 + `createPriceLine()` y축 가격 (동적 업데이트)
 
 ### UI Components
 
@@ -46,7 +49,7 @@
 
 ### Block Components
 
-- MarketBlock — search bar + registered coin list (My Coins / Favorites / Holdings tabs)
+- MarketBlock — search bar + registered coin list (My Coins / Holdings tabs)
 - CoinDetailBlock — coin name/symbol + dual exchange prices + kimchi premium + real-time chart
 - Base Block component (type dispatcher)
 
@@ -59,7 +62,6 @@
 ### State Management
 
 - coinSlice: unified coin data, selected coin, usdtKrwRate, loading/error states
-- favoriteSlice: watchlist persisted to localStorage
 - registeredCoinSlice: registered coin list persisted to localStorage (defaults: BTC/ETH/XRP/SOL/DOGE)
 - Store typed with TypeScript (RootState, AppDispatch)
 
@@ -120,6 +122,9 @@ Core features are implemented and functional. Real-time chart with Lightweight C
 - **USDT/KRW Exchange Rate System** ✅ — coinSlice.usdtKrwRate (separated from unifiedCoins)
 - **Tab State Preservation** ✅ — hidden CSS pattern
 - **TradingViewChart Removal** ✅ — Complete replacement with Lightweight Charts
+- **Chart Initial Zoom** ✅ — `setVisibleLogicalRange()` 최근 50개 캔들 표시
+- **Chart High/Low Markers** ✅ — 화살표 마커 + price line y축 가격 (동적 업데이트)
+- **Favorites Feature Removal** ✅ — favoriteSlice 삭제, 관련 UI/로직 전체 제거
 
 ### Known Limitations
 
@@ -163,6 +168,9 @@ Core features are implemented and functional. Real-time chart with Lightweight C
 - [x] **Tab state preservation** (hidden pattern)
 - [x] **Registered coins WebSocket migration** (REST API 429 error resolution)
 - [x] **10 coin registration limit** (Upbit WebSocket 15-coin limit compliance)
+- [x] **Chart initial zoom** (`setVisibleLogicalRange`, 50 candles)
+- [x] **Chart high/low markers** (arrows + price lines, dynamic on zoom/scroll)
+- [x] **Favorites feature removal** (favoriteSlice deleted, all references removed)
 
 ### Upcoming
 

@@ -21,7 +21,6 @@
 │  ┌──────────────────────────────┐  │
 │  │      Redux Store             │  │
 │  │  - coinSlice (+ usdtKrwRate) │  │
-│  │  - favoriteSlice             │  │
 │  │  - registeredCoinSlice       │  │
 │  └──────────────────────────────┘  │
 │                 │                   │
@@ -63,7 +62,6 @@
 │  │             │  │                      │  │
 │  │  [Search]   │  │  Trader: chart+price │  │
 │  │  My Coins/  │  │  Assets: portfolio   │  │
-│  │  Favorites/ │  │                      │  │
 │  │  Holdings   │  │                      │  │
 │  └─────────────┘  └──────────────────────┘  │
 └──────────────────────────────────────────────┘
@@ -129,10 +127,16 @@ Tab navigation: hidden CSS pattern (both tabs always mounted, inactive hidden vi
 - App.tsx store subscription syncs changes to DataManager
 
 ### Bandwidth Optimization Pattern
-- Ticker WebSocket for favorite coins only (`@ticker` stream)
+- Ticker WebSocket for registered coins (`@ticker` stream)
 - Kline WebSocket for selected coin only (`@kline_{interval}` stream)
-- REST polling for registered coins + USDT (1-second interval)
-- REST updates skipped for coins with active ticker WebSocket
+- REST polling for USDT exchange rate only (1-second interval)
+
+### Chart High/Low Markers Pattern (BinanceFuturesChart)
+- `createSeriesMarkers()` plugin for arrow markers (no text — avoids clipping at chart edges)
+- `createPriceLine()` for price display on y-axis (dashed line, always visible)
+- Updated on `subscribeVisibleLogicalRangeChange` — dynamic on zoom/scroll
+- Old price lines removed and recreated on each update
+- Shares handler with infinite scroll (past data loading)
 
 ## Component Relationships
 
@@ -142,7 +146,7 @@ Tab navigation: hidden CSS pattern (both tabs always mounted, inactive hidden vi
 - **BinanceFuturesChart.tsx:** Lightweight Charts candle chart with kline WebSocket
 
 ### Block Components
-- **MarketBlock.tsx:** Search + registered coin list (My Coins / Favorites / Holdings tabs)
+- **MarketBlock.tsx:** Search + registered coin list (My Coins / Holdings tabs)
 - **CoinDetailBlock.tsx:** Dual-exchange prices + kimchi premium + real-time chart
 - **Block.tsx:** Block type dispatcher
 
@@ -156,9 +160,8 @@ Tab navigation: hidden CSS pattern (both tabs always mounted, inactive hidden vi
 ### Real-time Price Updates
 1. DataManager fetches all markets from both exchanges
 2. Symbol mapping built (Upbit + Binance → unified symbol)
-3. Registered coins + USDT REST polling (1-second interval)
-4. Favorite coins use ticker WebSocket for real-time updates (REST skipped)
-5. USDT rate extracted separately → `setUsdtKrwRate` dispatch
+3. Registered coins use ticker WebSocket for real-time updates
+4. USDT rate extracted separately → `setUsdtKrwRate` dispatch
 6. Redux store updated via `setUnifiedCoins` dispatch
 7. Components re-render with new prices + animations
 
