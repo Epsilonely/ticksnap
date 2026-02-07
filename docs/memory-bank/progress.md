@@ -38,6 +38,7 @@
 - Initial zoom: `setVisibleLogicalRange()` — 최근 50개 캔들 표시 (500개 전체 줌아웃 방지)
 - `rightOffset: 7` — 마지막 캔들 오른쪽 여유 공간
 - High/Low markers: `createSeriesMarkers()` 화살표 + `createPriceLine()` y축 가격 (동적 업데이트)
+- Position entry price display: Blue line (LONG) / Orange line (SHORT) with entry price label
 
 ### UI Components
 
@@ -61,7 +62,7 @@
 
 ### State Management
 
-- coinSlice: unified coin data, selected coin, usdtKrwRate, loading/error states
+- coinSlice: unified coin data, selected coin, usdtKrwRate, futuresPositions, loading/error states
 - registeredCoinSlice: registered coin list persisted to localStorage (defaults: BTC/ETH/XRP/SOL/DOGE)
 - Store typed with TypeScript (RootState, AppDispatch)
 
@@ -125,6 +126,7 @@ Core features are implemented and functional. Real-time chart with Lightweight C
 - **Chart Initial Zoom** ✅ — `setVisibleLogicalRange()` 최근 50개 캔들 표시
 - **Chart High/Low Markers** ✅ — 화살표 마커 + price line y축 가격 (동적 업데이트)
 - **Favorites Feature Removal** ✅ — favoriteSlice 삭제, 관련 UI/로직 전체 제거
+- **Position Entry Price Display** ✅ — 차트에 현재 포지션 진입가 표시 (Blue: LONG, Orange: SHORT)
 
 ### Known Limitations
 
@@ -171,6 +173,7 @@ Core features are implemented and functional. Real-time chart with Lightweight C
 - [x] **Chart initial zoom** (`setVisibleLogicalRange`, 50 candles)
 - [x] **Chart high/low markers** (arrows + price lines, dynamic on zoom/scroll)
 - [x] **Favorites feature removal** (favoriteSlice deleted, all references removed)
+- [x] **Position entry price display** (chart shows current Futures position entry price)
 
 ### Upcoming
 

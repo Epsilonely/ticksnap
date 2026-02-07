@@ -8,7 +8,7 @@ Chart UX improvements and feature cleanup. Favorites feature removed entirely �
 
 ## Recent Changes
 
-### 2026.02.07 (Evening) — Chart UX Improvements + Favorites Removal ✅
+### 2026.02.07 (Evening) — Chart UX Improvements + Favorites Removal + Position Display ✅
 
 #### Completed Work
 
@@ -27,12 +27,19 @@ Chart UX improvements and feature cleanup. Favorites feature removed entirely �
   - `MarketBlock.tsx`: "관심" 탭, favorites selector, DataManager 동기화 useEffect, isFavorite 스타일링 제거
   - `CoinDetailBlock.tsx`: "관심 등록/해제" 버튼, toggleFavorite 핸들러, dispatch 제거
   - `DataManager.ts`: `favoriteCoins` 프로퍼티, `updateFavoriteCoins()`, favorites WebSocket/REST 로직 제거
+- **Futures Position Display on Chart** — 현재 포지션 진입가 차트 표시
+  - `coinSlice`: `futuresPositions` state 추가 (BinanceFuturesPosition[])
+  - `CoinDetailBlock`: 30초마다 포지션 REST API 호출, 선택된 코인과 매칭
+  - `BinanceFuturesChart`: `position` prop 추가, 진입가 price line 표시
+  - LONG: 파란색 (#2196F3), SHORT: 주황색 (#FF9800), 실선
+  - y축 라벨: "Entry: $XX,XXX.XX" 형식으로 진입가 표시
 
 #### Technical Decisions
 
 - **lightweight-charts v4+ markers**: `series.setMarkers()` 제거됨 → `createSeriesMarkers()` 플러그인 방식 사용
 - **Price line for labels**: 마커 텍스트가 차트 끝에서 잘리는 문제 → price line의 y축 라벨로 대체
 - **Favorites 제거**: 등록 코인 시스템이 favorites를 대체, WebSocket 연결은 등록 코인만 사용
+- **Position price line**: 실선 (high/low는 점선)으로 구분, 포지션 없으면 자동 제거
 
 ### 2026.02.07 (PM) — Registered Coins WebSocket Migration + 10 Coin Limit ✅
 
@@ -159,7 +166,7 @@ Left sidebar: MarketBlock
 
 ### State Management
 
-- coinSlice: coin market data (unifiedCoins, selectedCoin, usdtKrwRate, loading, error)
+- coinSlice: coin market data (unifiedCoins, selectedCoin, usdtKrwRate, futuresPositions, loading, error)
 - registeredCoinSlice: registered coin list (persisted to localStorage, defaults: BTC/ETH/XRP/SOL/DOGE)
 
 ## Learnings and Project Insights

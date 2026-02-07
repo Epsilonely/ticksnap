@@ -20,7 +20,8 @@
 │                                     │
 │  ┌──────────────────────────────┐  │
 │  │      Redux Store             │  │
-│  │  - coinSlice (+ usdtKrwRate) │  │
+│  │  - coinSlice (usdtKrwRate,   │  │
+│  │    futuresPositions)         │  │
 │  │  - registeredCoinSlice       │  │
 │  └──────────────────────────────┘  │
 │                 │                   │
@@ -138,6 +139,16 @@ Tab navigation: hidden CSS pattern (both tabs always mounted, inactive hidden vi
 - Old price lines removed and recreated on each update
 - Shares handler with infinite scroll (past data loading)
 
+### Position Entry Price Display Pattern
+- `futuresPositions` stored in Redux coinSlice (fetched every 30s via REST API)
+- CoinDetailBlock filters positions by current symbol (`{coinSymbol}USDT`)
+- Passes position data to BinanceFuturesChart as prop
+- Chart creates price line at entry price when position exists
+- Color coding: Blue (#2196F3) for LONG, Orange (#FF9800) for SHORT
+- Solid line style (distinguishes from high/low dashed lines)
+- Y-axis label shows entry price: "Entry: $XX,XXX.XX"
+- Price line automatically removed when position is closed or coin changes
+
 ## Component Relationships
 
 ### Core Components
@@ -178,3 +189,13 @@ Tab navigation: hidden CSS pattern (both tabs always mounted, inactive hidden vi
 2. CoinDetailBlock reads `usdtKrwRate` from Redux
 3. Formula: `(upbitKRW / (binanceUSDT * usdtKrwRate) - 1) * 100`
 4. Only shown when both exchanges have data and rate > 0
+
+### Position Entry Price Display
+1. CoinDetailBlock fetches Futures positions via REST API every 30 seconds
+2. Filters for active positions only (positionAmt !== 0)
+3. Dispatches to Redux: `setFuturesPositions(activePositions)`
+4. Finds matching position for current symbol: `{coinSymbol}USDT`
+5. Passes position data to BinanceFuturesChart: `{ entryPrice, positionAmt, positionSide }`
+6. Chart useEffect watches position prop changes
+7. Creates price line at entry price with color based on positionSide
+8. Removes price line when position becomes null (closed or symbol changed)
