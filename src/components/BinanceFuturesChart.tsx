@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createChart, CandlestickSeries, HistogramSeries, ColorType } from 'lightweight-charts';
-import type { IChartApi, ISeriesApi, CandlestickData, Time } from 'lightweight-charts';
+import type { IChartApi, ISeriesApi, CandlestickData, Time, LogicalRange } from 'lightweight-charts';
 import { fetchBinanceKlines, KlineInterval } from '../services/BinanceApi';
 
 interface BinanceFuturesChartProps {
@@ -25,8 +25,70 @@ export default function BinanceFuturesChart({ symbol, theme = 'light' }: Binance
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // 과거 데이터 로딩 관련 refs
+  const allCandlesRef = useRef<CandlestickData[]>([]);
+  const allVolumesRef = useRef<{ time: Time; value: number; color: string }[]>([]);
+  const isLoadingMoreRef = useRef(false);
+  const noMoreDataRef = useRef(false);
+
   const [interval, setInterval] = useState<KlineInterval>('1h');
   const [isLoading, setIsLoading] = useState(true);
+
+  // 과거 데이터 추가 로딩
+  const loadOlderData = useCallback(async (sym: string, intv: KlineInterval) => {
+    if (isLoadingMoreRef.current || noMoreDataRef.current) return;
+    if (allCandlesRef.current.length === 0) return;
+
+    isLoadingMoreRef.current = true;
+
+    const oldestTime = allCandlesRef.current[0].time as unknown as number;
+    // oldestTime은 초 단위 → 밀리초로 변환, -1ms로 현재 첫 캔들 제외
+    const endTime = oldestTime * 1000 - 1;
+
+    const klines = await fetchBinanceKlines(sym, intv, 500, endTime);
+
+    if (klines.length === 0) {
+      noMoreDataRef.current = true;
+      isLoadingMoreRef.current = false;
+      return;
+    }
+
+    const newCandles: CandlestickData[] = klines.map((k) => ({
+      time: k.time as unknown as Time,
+      open: k.open,
+      high: k.high,
+      low: k.low,
+      close: k.close,
+    }));
+
+    const newVolumes = klines.map((k) => ({
+      time: k.time as unknown as Time,
+      value: k.volume,
+      color: k.close >= k.open ? 'rgba(99,157,1,0.4)' : 'rgba(234,0,112,0.4)',
+    }));
+
+    // 기존 데이터 앞에 prepend
+    allCandlesRef.current = [...newCandles, ...allCandlesRef.current];
+    allVolumesRef.current = [...newVolumes, ...allVolumesRef.current];
+
+    candlestickSeriesRef.current?.setData(allCandlesRef.current);
+    volumeSeriesRef.current?.setData(allVolumesRef.current);
+
+    isLoadingMoreRef.current = false;
+  }, []);
+
+  // visible range 변경 핸들러
+  const handleVisibleRangeChange = useCallback(
+    (logicalRange: LogicalRange | null) => {
+      if (!logicalRange || !candlestickSeriesRef.current) return;
+
+      const barsInfo = candlestickSeriesRef.current.barsInLogicalRange(logicalRange);
+      if (barsInfo !== null && barsInfo.barsBefore < 10) {
+        loadOlderData(symbol, interval);
+      }
+    },
+    [symbol, interval, loadOlderData],
+  );
 
   // 차트 인스턴스 생성 & 리사이즈 관리
   useEffect(() => {
@@ -162,6 +224,12 @@ export default function BinanceFuturesChart({ symbol, theme = 'light' }: Binance
 
     let cancelled = false;
 
+    // 심볼/인터벌 변경 시 상태 초기화
+    allCandlesRef.current = [];
+    allVolumesRef.current = [];
+    isLoadingMoreRef.current = false;
+    noMoreDataRef.current = false;
+
     const loadData = async () => {
       setIsLoading(true);
 
@@ -181,6 +249,9 @@ export default function BinanceFuturesChart({ symbol, theme = 'light' }: Binance
         value: k.volume,
         color: k.close >= k.open ? 'rgba(99,157,1,0.4)' : 'rgba(234,0,112,0.4)',
       }));
+
+      allCandlesRef.current = candles;
+      allVolumesRef.current = volumes;
 
       candlestickSeriesRef.current?.setData(candles);
       volumeSeriesRef.current?.setData(volumes);
@@ -205,6 +276,18 @@ export default function BinanceFuturesChart({ symbol, theme = 'light' }: Binance
       }
     };
   }, [symbol, interval, connectWebSocket]);
+
+  // visible range 변경 구독 (과거 데이터 자동 로딩)
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+
+    chart.timeScale().subscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
+
+    return () => {
+      chart.timeScale().unsubscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
+    };
+  }, [handleVisibleRangeChange]);
 
   return (
     <div className="relative w-full h-full flex flex-col">

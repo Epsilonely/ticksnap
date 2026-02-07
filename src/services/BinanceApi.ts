@@ -77,11 +77,12 @@ export interface BinanceKline {
 export type KlineInterval = '1m' | '5m' | '15m' | '1h' | '4h' | '1d';
 
 // 바이낸스 Futures kline(캔들스틱) 데이터 조회
-export const fetchBinanceKlines = async (symbol: string, interval: KlineInterval, limit: number = 500): Promise<BinanceKline[]> => {
+export const fetchBinanceKlines = async (symbol: string, interval: KlineInterval, limit: number = 500, endTime?: number): Promise<BinanceKline[]> => {
   try {
-    const response = await axios.get<number[][]>('/fapi/v1/klines', {
-      params: { symbol, interval, limit },
-    });
+    const params: Record<string, string | number> = { symbol, interval, limit };
+    if (endTime !== undefined) params.endTime = endTime;
+
+    const response = await axios.get<number[][]>('/fapi/v1/klines', { params });
 
     return response.data.map((k) => ({
       time: Math.floor(Number(k[0]) / 1000), // ms -> seconds (UTCTimestamp)
