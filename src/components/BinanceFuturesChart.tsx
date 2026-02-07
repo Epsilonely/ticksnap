@@ -6,6 +6,11 @@ import { fetchBinanceKlines, KlineInterval } from '../services/BinanceApi';
 interface BinanceFuturesChartProps {
   symbol: string; // e.g. "BTCUSDT"
   theme?: 'light' | 'dark';
+  position?: {
+    entryPrice: number;
+    positionAmt: number;
+    positionSide: 'LONG' | 'SHORT' | 'BOTH';
+  } | null;
 }
 
 const INTERVAL_OPTIONS: { label: string; value: KlineInterval }[] = [
@@ -17,7 +22,7 @@ const INTERVAL_OPTIONS: { label: string; value: KlineInterval }[] = [
   { label: '1D', value: '1d' },
 ];
 
-export default function BinanceFuturesChart({ symbol, theme = 'light' }: BinanceFuturesChartProps) {
+export default function BinanceFuturesChart({ symbol, theme = 'light', position }: BinanceFuturesChartProps) {
   const chartContainerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
   const candlestickSeriesRef = useRef<ISeriesApi<'Candlestick'> | null>(null);
@@ -27,6 +32,7 @@ export default function BinanceFuturesChart({ symbol, theme = 'light' }: Binance
   const markersPluginRef = useRef<ISeriesMarkersPluginApi<Time> | null>(null);
   const highPriceLineRef = useRef<IPriceLine | null>(null);
   const lowPriceLineRef = useRef<IPriceLine | null>(null);
+  const positionPriceLineRef = useRef<IPriceLine | null>(null);
 
   // 과거 데이터 로딩 관련 refs
   const allCandlesRef = useRef<CandlestickData[]>([]);
@@ -376,6 +382,37 @@ export default function BinanceFuturesChart({ symbol, theme = 'light' }: Binance
       chart.timeScale().unsubscribeVisibleLogicalRangeChange(handleVisibleRangeChange);
     };
   }, [handleVisibleRangeChange]);
+
+  // 포지션 진입가 표시
+  useEffect(() => {
+    const series = candlestickSeriesRef.current;
+    if (!series) return;
+
+    // 기존 포지션 price line 제거
+    if (positionPriceLineRef.current) {
+      series.removePriceLine(positionPriceLineRef.current);
+      positionPriceLineRef.current = null;
+    }
+
+    // 포지션이 없으면 종료
+    if (!position) return;
+
+    const { entryPrice, positionSide } = position;
+
+    // Long: 파란색, Short: 주황색
+    const color = positionSide === 'SHORT' ? '#FF9800' : '#2196F3';
+    const label = `Entry: $${entryPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+    positionPriceLineRef.current = series.createPriceLine({
+      price: entryPrice,
+      color,
+      lineWidth: 2,
+      lineStyle: LineStyle.Solid,
+      axisLabelVisible: true,
+      title: label,
+      lineVisible: true,
+    });
+  }, [position]);
 
   return (
     <div className="relative w-full h-full flex flex-col">

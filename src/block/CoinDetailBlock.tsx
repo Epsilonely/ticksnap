@@ -1,14 +1,34 @@
-import { useSelector } from 'react-redux';
+import { useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../store';
+import { setFuturesPositions } from '../store/slices/coinSlice';
 import BinanceFuturesChart from '../components/BinanceFuturesChart';
 import ExchangePriceDisplay from '../components/ExchangePriceDisplay';
+import { binanceAccountApi } from '../services/BinanceAccountApi';
 
 function CoinDetailBlock() {
+  const dispatch = useDispatch();
   const selectedCoin = useSelector((state: RootState) => state.coin.selectedCoin);
   const unifiedCoins = useSelector((state: RootState) => state.coin.unifiedCoins);
+  const futuresPositions = useSelector((state: RootState) => state.coin.futuresPositions);
 
   // USDT/KRW 환율
   const usdtToKrw = useSelector((state: RootState) => state.coin.usdtKrwRate);
+
+  // Futures 포지션 주기적으로 fetch (30초 간격)
+  useEffect(() => {
+    const fetchPositions = async () => {
+      const positions = await binanceAccountApi.getFuturesPositionsViaREST();
+      // positionAmt가 0이 아닌 포지션만 필터링
+      const activePositions = positions.filter((p) => parseFloat(p.positionAmt) !== 0);
+      dispatch(setFuturesPositions(activePositions));
+    };
+
+    fetchPositions();
+    const interval = setInterval(fetchPositions, 30000);
+
+    return () => clearInterval(interval);
+  }, [dispatch]);
 
   if (!selectedCoin) {
     return (
@@ -37,11 +57,22 @@ function CoinDetailBlock() {
   const binanceChange = selectedCoinData.binance?.change || 'EVEN';
   const binanceChangeRate = selectedCoinData.binance?.changeRate || 0;
 
+  // 현재 선택된 코인의 Futures 포지션 찾기
+  const currentSymbol = `${selectedCoinData.coinSymbol}USDT`;
+  const currentPosition = futuresPositions.find((p) => p.symbol === currentSymbol);
+  const positionData = currentPosition
+    ? {
+        entryPrice: parseFloat(currentPosition.entryPrice),
+        positionAmt: parseFloat(currentPosition.positionAmt),
+        positionSide: currentPosition.positionSide as 'LONG' | 'SHORT' | 'BOTH',
+      }
+    : null;
+
   return (
     <div className="h-full flex flex-col bg-[#F2F2F2] rounded-md p-4">
       {/* 헤더 - 코인 이름 */}
       <div className="flex-shrink-0 flex justify-between items-center mb-4">
-        <h2 className="text-[24px] font-bold text-[#26262C]">이더리움 {selectedCoinData.coinSymbol}</h2>
+        <h2 className="text-[24px] font-bold text-[#26262C]">{selectedCoinData.name} {selectedCoinData.coinSymbol}</h2>
       </div>
 
       {/* 메인 가격 표시 영역 */}
@@ -68,7 +99,7 @@ function CoinDetailBlock() {
       </div>
 
       {/* 차트 - 남은 공간 모두 차지 */}
-      <div className="flex-1 min-h-0 w-full">{selectedCoinData.binance ? <BinanceFuturesChart symbol={`${selectedCoinData.coinSymbol}USDT`} theme="light" /> : <div className="h-full flex items-center justify-center text-[#666666]">바이낸스 차트만 지원됩니다.</div>}</div>
+      <div className="flex-1 min-h-0 w-full">{selectedCoinData.binance ? <BinanceFuturesChart symbol={`${selectedCoinData.coinSymbol}USDT`} theme="light" position={positionData} /> : <div className="h-full flex items-center justify-center text-[#666666]">바이낸스 차트만 지원됩니다.</div>}</div>
     </div>
   );
 }
