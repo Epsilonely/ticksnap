@@ -5,6 +5,7 @@ import { UnifiedCoinData } from '../../services/DataManager';
 interface SimpleCoinState {
   unifiedCoins: UnifiedCoinData[];
   selectedCoin: string | null;
+  usdtKrwRate: number; // USDT/KRW 환율 (업비트 KRW-USDT 현재가)
   loading: boolean;
   error: string | null;
 }
@@ -13,6 +14,7 @@ interface SimpleCoinState {
 const initialState: SimpleCoinState = {
   unifiedCoins: [],
   selectedCoin: null,
+  usdtKrwRate: 0,
   loading: true,
   error: null,
 };
@@ -28,6 +30,11 @@ const coinSlice = createSlice({
       state.error = null;
     },
     
+    // USDT/KRW 환율 업데이트
+    setUsdtKrwRate: (state, action: PayloadAction<number>) => {
+      state.usdtKrwRate = action.payload;
+    },
+
     // 코인 선택
     selectCoin: (state, action: PayloadAction<string>) => {
       state.selectedCoin = action.payload;
@@ -35,5 +42,5 @@ const coinSlice = createSlice({
   },
 });
 
-export const { setUnifiedCoins, selectCoin } = coinSlice.actions;
+export const { setUnifiedCoins, setUsdtKrwRate, selectCoin } = coinSlice.actions;
 export default coinSlice.reducer;

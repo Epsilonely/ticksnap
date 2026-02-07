@@ -63,6 +63,40 @@ export const fetchBinanceTickers = async (symbols?: string[]): Promise<BinanceTi
   }
 };
 
+// --- Kline/Candlestick 타입 ---
+
+export interface BinanceKline {
+  time: number; // Open time (seconds, lightweight-charts UTCTimestamp)
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+export type KlineInterval = '1m' | '5m' | '15m' | '1h' | '4h' | '1d';
+
+// 바이낸스 Futures kline(캔들스틱) 데이터 조회
+export const fetchBinanceKlines = async (symbol: string, interval: KlineInterval, limit: number = 500): Promise<BinanceKline[]> => {
+  try {
+    const response = await axios.get<number[][]>('/fapi/v1/klines', {
+      params: { symbol, interval, limit },
+    });
+
+    return response.data.map((k) => ({
+      time: Math.floor(Number(k[0]) / 1000), // ms -> seconds (UTCTimestamp)
+      open: parseFloat(String(k[1])),
+      high: parseFloat(String(k[2])),
+      low: parseFloat(String(k[3])),
+      close: parseFloat(String(k[4])),
+      volume: parseFloat(String(k[5])),
+    }));
+  } catch (error) {
+    console.error('Failed to fetch Binance Futures klines:', error);
+    return [];
+  }
+};
+
 // 바인낸스 데이터를 업비트 형식으로 변환하는 유틸리티 함수
 export const convertBinanceTickerToUpbitFormat = (binanceTicker: BinanceTickerData) => {
   const changeRate = parseFloat(binanceTicker.priceChangePercent) / 100;

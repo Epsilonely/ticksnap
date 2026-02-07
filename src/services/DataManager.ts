@@ -1,7 +1,7 @@
 import { fetchMarkets as fetchUpbitMarkets, fetchTickers as fetchUpbitTickers } from './UpbitApi';
 import { fetchBinanceMarkets, fetchBinanceTickers, convertBinanceTickerToUpbitFormat } from './BinanceApi';
 import { AppDispatch } from '../store';
-import { setUnifiedCoins } from '../store/slices/coinSlice';
+import { setUnifiedCoins, setUsdtKrwRate } from '../store/slices/coinSlice';
 
 // 통합 코인 데이터 타입
 export interface UnifiedCoinData {
@@ -106,6 +106,12 @@ export class DataManager {
       if (mapping?.upbit) upbitSymbols.push(mapping.upbit);
       if (mapping?.binance) binanceSymbols.push(mapping.binance);
     });
+
+    // USDT 환율용 (KRW-USDT) 항상 포함
+    const usdtMapping = this.coinMapping.get('USDT');
+    if (usdtMapping?.upbit && !upbitSymbols.includes(usdtMapping.upbit)) {
+      upbitSymbols.push(usdtMapping.upbit);
+    }
 
     return { upbitSymbols, binanceSymbols };
   }
@@ -236,6 +242,9 @@ export class DataManager {
   private createUnifiedData(upbitTickers: any[], binanceTickers: any[]): void {
     this.unifiedCoins = [];
 
+    // USDT/KRW 환율 추출 (코인 목록에는 넣지 않음)
+    this.extractUsdtRate(upbitTickers);
+
     // 등록 코인만 순회
     const coinsToProcess = this.registeredCoins.length > 0 ? this.registeredCoins : [];
     coinsToProcess.forEach((coinSymbol) => {
@@ -335,6 +344,9 @@ export class DataManager {
 
   // 기존 통합 데이터 업데이트 (불변성 유지, 등록 코인만)
   private updateUnifiedData(upbitTickers: any[], binanceTickers: any[]): void {
+    // USDT/KRW 환율 추출
+    this.extractUsdtRate(upbitTickers);
+
     // 미등록 코인 제거 + 기존 등록 코인 업데이트
     const registeredSet = new Set(this.registeredCoins);
     this.unifiedCoins = this.unifiedCoins
@@ -436,6 +448,17 @@ export class DataManager {
         this.unifiedCoins.push(newCoin);
       }
     });
+  }
+
+  // USDT/KRW 환율 추출 (업비트 KRW-USDT 현재가)
+  private extractUsdtRate(upbitTickers: any[]): void {
+    const usdtMapping = this.coinMapping.get('USDT');
+    if (usdtMapping?.upbit) {
+      const usdtTicker = upbitTickers.find((t) => t.market === usdtMapping.upbit);
+      if (usdtTicker && this.dispatch) {
+        this.dispatch(setUsdtKrwRate(usdtTicker.trade_price));
+      }
+    }
   }
 
   // Redux store 업데이트

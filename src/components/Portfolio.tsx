@@ -202,9 +202,8 @@ function Portfolio() {
 
   const binanceTotalValue = binanceSpotUSDT + binanceSpotTotalValue + binanceFuturesUSDT + binanceFuturesTotalValue;
 
-  // USDT/KRW 환율 가져오기 (unifiedCoins에서 USDT 정보 추출)
-  const usdtCoin = unifiedCoins.find((coin: UnifiedCoinData) => coin.coinSymbol === 'USDT');
-  const usdtToKrw = usdtCoin?.upbit?.price || 0; // 업비트 USDT 현재가
+  // USDT/KRW 환율
+  const usdtToKrw = useSelector((state: RootState) => state.coin.usdtKrwRate);
 
   // 전체 총 자산 (업비트 KRW + 바이낸스 USDT를 KRW로 환산)
   const totalInvestment = upbitTotalInvestment;

@@ -92,18 +92,14 @@ function App() {
                 </button>
               </div>
 
-              {/* 탭 컨텐츠 - 남은 공간 모두 차지 */}
-              <div className="flex-1 min-h-0 w-full">
-                {(() => {
-                  switch (activeMiddleTab) {
-                    case 'exchange':
-                      return <Block type={BlockType.BLOCK_TY_COIN_DETAIL} />;
-                    case 'investment':
-                      return <Block type={BlockType.BLOCK_TY_PORTFOLIO} />;
-                    default:
-                      return <Block type={BlockType.BLOCK_TY_COIN_DETAIL} />;
-                  }
-                })()}
+              {/* 탭 컨텐츠 - 남은 공간 모두 차지 (항상 마운트, 비활성 탭은 hidden) */}
+              <div className="flex-1 min-h-0 w-full relative">
+                <div className={`absolute inset-0 ${activeMiddleTab === 'exchange' ? '' : 'hidden'}`}>
+                  <Block type={BlockType.BLOCK_TY_COIN_DETAIL} />
+                </div>
+                <div className={`absolute inset-0 ${activeMiddleTab === 'investment' ? '' : 'hidden'}`}>
+                  <Block type={BlockType.BLOCK_TY_PORTFOLIO} />
+                </div>
               </div>
             </div>
           </div>

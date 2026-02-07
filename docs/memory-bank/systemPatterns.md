@@ -20,7 +20,7 @@
 │                                     │
 │  ┌──────────────────────────────┐  │
 │  │      Redux Store             │  │
-│  │  - coinSlice                 │  │
+│  │  - coinSlice (+ usdtKrwRate) │  │
 │  │  - favoriteSlice             │  │
 │  │  - registeredCoinSlice       │  │
 │  └──────────────────────────────┘  │
@@ -29,25 +29,25 @@
 │  │                              │  │
 │  ▼                              ▼  │
 │ Components                  Blocks │
-│ - Portfolio                - Market│
-│ - Trading                  - Detail│
-│ - CoinInfo                 - Board │
+│ - BinanceFuturesChart    - Market  │
+│ - Portfolio              - Detail  │
+│ - ExchangePriceDisplay   - Board   │
 │                                     │
 └─────────────────────────────────────┘
-                 │
-                 ▼
-┌─────────────────────────────────────┐
-│         Service Layer               │
-│  - DataManager (singleton)         │
-│  - BinanceApi / BinanceAccountApi  │
-│  - UpbitApi / UpbitAccountApi      │
-└─────────────────────────────────────┘
-                 │
-                 ▼
+        │                    │
+        ▼                    ▼
+┌──────────────┐  ┌──────────────────┐
+│ DataManager  │  │ Kline WebSocket  │
+│ (ticker)     │  │ (chart-owned)    │
+│ - REST poll  │  │ - per coin+intv  │
+│ - WS ticker  │  │ - fstream.bin... │
+└──────────────┘  └──────────────────┘
+        │                    │
+        ▼                    ▼
 ┌─────────────────────────────────────┐
 │      External APIs                  │
-│  - Binance WebSocket/REST          │
-│  - Upbit WebSocket/REST            │
+│  - Binance Futures REST/WebSocket  │
+│  - Upbit REST/WebSocket            │
 └─────────────────────────────────────┘
 ```
 
@@ -58,143 +58,119 @@
 │  ┌─────────────┐  ┌──────────────────────┐  │
 │  │             │  │ [Trader | Assets]     │  │
 │  │  MarketBlock│  ├──────────────────────┤  │
-│  │  (left      │  │                      │  │
-│  │   sidebar)  │  │  Active Tab Content  │  │
-│  │             │  │  - CoinDetailBlock   │  │
-│  │  [검색바]   │  │  - Portfolio         │  │
-│  │  내코인/    │  │                      │  │
+│  │  (left      │  │ (hidden pattern:     │  │
+│  │   sidebar)  │  │  both always mounted)│  │
+│  │             │  │                      │  │
+│  │  [검색바]   │  │  Trader: chart+price │  │
+│  │  내코인/    │  │  Assets: portfolio   │  │
 │  │  관심/보유  │  │                      │  │
 │  └─────────────┘  └──────────────────────┘  │
 └──────────────────────────────────────────────┘
 ```
 
-Tab navigation managed by local state in App.tsx (`activeMiddleTab`):
-- `'exchange'` → CoinDetailBlock
-- `'investment'` → Portfolio
-
-## Key Technical Decisions
-
-### Frontend Framework
-- **React 19:** Latest features, concurrent rendering
-- **TypeScript:** Type safety for complex data structures
-- **Redux Toolkit:** Simplified state management with less boilerplate
-
-### Desktop Framework
-- **Electron 35:** Cross-platform desktop capabilities
-- **Vite:** Fast build tool with HMR for development
-
-### Styling
-- **Tailwind CSS 4:** Utility-first CSS with modern features
-- **Custom fonts:** Pretendard, Spoqa Han Sans Neo for Korean support
-
-### API Communication
-- **axios:** HTTP requests for REST APIs
-- **ws:** WebSocket library for real-time data
-- **jsonwebtoken:** For Upbit API authentication (JWT)
+Tab navigation: hidden CSS pattern (both tabs always mounted, inactive hidden via `display: none`).
 
 ## Design Patterns in Use
 
 ### Singleton Pattern (DataManager)
-- Single instance coordinates all data flow
-- Owns polling intervals, WebSocket connections, and Redux dispatch
+- Single instance coordinates all ticker data flow
+- Owns polling intervals, ticker WebSocket connections, and Redux dispatch
 - `DataManager.getInstance()` for access across the app
 - `initialize()` called once from App.tsx on mount
 - `destroy()` for cleanup
+- Does NOT manage chart kline data (chart is self-contained)
+
+### Self-Contained Chart Pattern (BinanceFuturesChart)
+- Chart component manages its own data lifecycle independently from DataManager
+- Own REST fetch for historical candles (`fetchBinanceKlines`)
+- Own kline WebSocket connection (`wss://fstream.binance.com/ws/{symbol}@kline_{interval}`)
+- Local state for candle data (not in Redux — view-specific, high-frequency)
+- Two useEffects with distinct responsibilities:
+  - Chart instance creation (deps: `[theme]`)
+  - Data loading + WebSocket (deps: `[symbol, interval]`)
+- Cleanup on unmount: WebSocket close, fetch cancellation
+
+### Hidden Tab Pattern (App.tsx)
+- Both tab contents (CoinDetailBlock, Portfolio) are always rendered
+- Inactive tab uses `hidden` CSS class (`display: none`)
+- Preserves component state, WebSocket connections, and chart data across tab switches
+- Avoids costly re-mount and re-fetch on every tab change
+
+### USDT Exchange Rate Pattern
+- USDT/KRW rate stored as separate Redux field (`coinSlice.usdtKrwRate`), NOT in `unifiedCoins`
+- DataManager always fetches KRW-USDT from Upbit alongside registered coins
+- `extractUsdtRate()` extracts rate from ticker response and dispatches to Redux
+- Consumers read from `state.coin.usdtKrwRate`
+- **Key learning**: Adding USDT to `unifiedCoins` caused it to appear in MarketBlock coin list + flickering
 
 ### Service Layer Pattern
 - Separate API logic from UI components
 - Each exchange has dedicated service files (Api + AccountApi)
-- DataManager orchestrates across services
+- DataManager orchestrates ticker data across services
 - AccountApi services communicate via IPC (renderer → main → exchange)
 
 ### Data Normalization Pattern
 - Binance **Futures** data converted to Upbit-compatible format
-- `convertBinanceTickerToUpbitFormat()` and `convertBinanceCandleToUpbitFormat()` in BinanceApi.ts
+- `convertBinanceTickerToUpbitFormat()` in BinanceApi.ts
 - Unified `UnifiedCoinData` structure merges both exchanges
 - Symbol mapping: Upbit `KRW-BTC` + Binance Futures `BTCUSDT` → symbol `BTC`
 
 ### IPC Bridge Pattern (Electron Security)
 - Context isolation enabled — renderer cannot access Node.js directly
-- Preload script exposes typed API bridges:
-  - `window.privateWebSocketAPI` — Upbit private WebSocket
-  - `window.upbitAPI` — Upbit REST endpoints
-  - `window.binanceAPI` — Binance REST endpoints
+- Preload script exposes typed API bridges
 - Main process handles authentication (JWT signing, API key usage)
 - Renderer never sees raw API keys
 
-### Observer Pattern
-- WebSocket connections observe exchange data streams
-- Components subscribe to Redux store changes
-- Real-time updates propagate: WebSocket → Service → Redux → Component
-
 ### Registered Coin Pattern
-- 사용자가 검색으로 보고 싶은 코인을 등록/해제
-- `registeredCoinSlice` (localStorage persist, 기본값: BTC/ETH/XRP/SOL/DOGE)
-- DataManager는 등록 코인만 REST 폴링 (기존 전체 수백 개 → 등록된 코인만)
-- App.tsx에서 store subscribe로 등록 코인 변경 시 DataManager 자동 동기화
+- Users register coins they want to track
+- `registeredCoinSlice` (localStorage persist, default: BTC/ETH/XRP/SOL/DOGE)
+- DataManager polls only registered coins (+ USDT for exchange rate)
+- App.tsx store subscription syncs changes to DataManager
 
 ### Bandwidth Optimization Pattern
-- WebSocket connections opened only for favorite coins (`wss://fstream.binance.com`)
-- REST polling handles registered coins only (1-second interval)
-- REST updates skipped for coins with active WebSocket feeds
-- Binance Futures ticker: 전체 fetch + client-side filter (Futures API 제약)
-
-### Component Composition
-- Small, reusable components (PriceDisplay, ExchangePriceDisplay)
-- Larger block components compose smaller ones
-- Blocks handle layout; components handle specific features
+- Ticker WebSocket for favorite coins only (`@ticker` stream)
+- Kline WebSocket for selected coin only (`@kline_{interval}` stream)
+- REST polling for registered coins + USDT (1-second interval)
+- REST updates skipped for coins with active ticker WebSocket
 
 ## Component Relationships
 
 ### Core Components
-- **App.tsx:** Root component, initializes DataManager, manages tab navigation
-- **Portfolio.tsx:** User's holdings — Upbit KRW, Binance Spot, Binance Futures with P&L
-- **Trading.tsx:** Order placement interface (currently a stub)
-- **CoinInfo.tsx:** Bid/ask ratio visualization
+- **App.tsx:** Root, initializes DataManager, manages tabs (hidden pattern)
+- **Portfolio.tsx:** Holdings — Upbit KRW, Binance Spot, Binance Futures with P&L
+- **BinanceFuturesChart.tsx:** Lightweight Charts candle chart with kline WebSocket
 
 ### Block Components
-- **MarketBlock.tsx:** 검색바 + 등록 코인 리스트 (내 코인 / 관심 / 보유 탭)
-- **CoinDetailBlock.tsx:** Selected coin details — price, chart, trading panel
+- **MarketBlock.tsx:** Search + registered coin list (내 코인 / 관심 / 보유 tabs)
+- **CoinDetailBlock.tsx:** Dual-exchange prices + kimchi premium + real-time chart
 - **Block.tsx:** Block type dispatcher
 
 ### Common Components
 - **PriceDisplay.tsx:** Formatted price with decimal color coding
 - **Scrollbar.tsx:** Custom scrollbar styling
 - **ExchangePriceDisplay.tsx:** Exchange logo + animated price + change %
-- **TradingViewChart.tsx:** Current chart implementation (to be replaced)
-- **LightweightChart.tsx:** Planned chart component — Binance Futures only (Upbit chart will not be implemented)
 
 ## Critical Implementation Paths
 
 ### Real-time Price Updates
-1. DataManager initializes and fetches all markets from both exchanges (Upbit KRW + Binance Futures PERPETUAL)
+1. DataManager fetches all markets from both exchanges
 2. Symbol mapping built (Upbit + Binance → unified symbol)
-3. 등록 코인만 REST 폴링 (1초 간격)
-4. 관심(favorite) 코인은 WebSocket 실시간 업데이트 (REST 스킵)
-5. Data normalized to UnifiedCoinData format
+3. 등록 코인 + USDT REST 폴링 (1초 간격)
+4. 관심 코인은 ticker WebSocket 실시간 업데이트 (REST 스킵)
+5. USDT rate extracted separately → `setUsdtKrwRate` dispatch
 6. Redux store updated via `setUnifiedCoins` dispatch
 7. Components re-render with new prices + animations
 
-### Portfolio Calculation
-1. Fetch Upbit account balances via IPC (`upbit-get-accounts`)
-2. Fetch Binance Spot balances via IPC (`binance-get-accounts`)
-3. Fetch Binance Futures balances + positions via IPC
-4. Get current prices from unified coin data
-5. Calculate total value and P&L per asset
-6. Display in Portfolio component with exchange separation
+### Real-time Chart (Kline)
+1. User selects coin → CoinDetailBlock passes `{symbol}USDT` to BinanceFuturesChart
+2. Chart fetches 500 historical candles via REST (`/fapi/v1/klines`)
+3. Chart opens kline WebSocket (`{symbol}@kline_{interval}`)
+4. Each WebSocket message → `series.update()` for real-time candle
+5. On coin/interval change: cleanup old WS → new REST fetch → new WS
+6. On unmount: WebSocket close, cancelled flag prevents stale data
 
-### Trading Flow (Planned)
-1. User inputs order details in Trading component
-2. Validation of inputs (amount, price, balance)
-3. API call to exchange via IPC (AccountApi service)
-4. Response handling (success/error)
-5. Portfolio update on successful trade
-6. User feedback via UI notifications
-
-### Data Synchronization
-1. DataManager coordinates multiple data sources
-2. Periodic REST refresh for registered coins only
-3. Continuous WebSocket updates for favorites (`wss://fstream.binance.com`)
-4. State reconciliation on reconnection (5-second retry)
-5. Error recovery with automatic retry
-6. 등록 코인 변경 시 즉시 데이터 갱신 (`refreshRegisteredCoinData()`)
+### Kimchi Premium Calculation
+1. DataManager fetches KRW-USDT ticker from Upbit → dispatches `setUsdtKrwRate`
+2. CoinDetailBlock reads `usdtKrwRate` from Redux
+3. Formula: `(upbitKRW / (binanceUSDT * usdtKrwRate) - 1) * 100`
+4. Only shown when both exchanges have data and rate > 0
