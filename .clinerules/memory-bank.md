@@ -19,6 +19,8 @@ When starting a task, read all files in `docs/memory-bank/`:
 
 Use "**update memory bank**" command to review and update all files in `docs/memory-bank/`.
 
+**IMPORTANT: All memory-bank `.md` files MUST be written in English only.** This ensures consistency and clarity across all documentation.
+
 ---
 
 # Original Memory Bank Documentation

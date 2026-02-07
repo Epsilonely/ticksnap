@@ -19,11 +19,12 @@
 - Upbit Account API (UpbitAccountApi.ts) — account balances via IPC
 - DataManager singleton for centralized ticker data orchestration
 - Binance Futures data normalization to Upbit format for unified processing
-- REST polling every 1 second (등록된 코인 + USDT 환율)
-- Ticker WebSocket connections for favorite coins only (`wss://fstream.binance.com`)
+- REST polling every 1 second (initial load + USDT exchange rate only)
+- Ticker WebSocket connections for registered + favorite coins (`wss://fstream.binance.com`)
 - Kline WebSocket for selected coin chart (`wss://fstream.binance.com/ws/{symbol}@kline_{interval}`)
 - Automatic WebSocket reconnection (5-second retry)
-- 등록 코인 시스템: 사용자가 등록한 코인만 폴링
+- Registered coin system: 10 coin limit, real-time updates via WebSocket
+- WebSocket limits: Upbit 15 coins, Binance 300 coins
 
 ### Chart
 
@@ -45,8 +46,8 @@
 
 ### Block Components
 
-- MarketBlock — 검색바 + 등록 코인 리스트 (내 코인 / 관심 / 보유 탭)
-- CoinDetailBlock — 코인 이름/심볼 + 양쪽 거래소 가격 + 김치프리미엄 + 실시간 차트
+- MarketBlock — search bar + registered coin list (My Coins / Favorites / Holdings tabs)
+- CoinDetailBlock — coin name/symbol + dual exchange prices + kimchi premium + real-time chart
 - Base Block component (type dispatcher)
 
 ### App Layout
@@ -59,7 +60,7 @@
 
 - coinSlice: unified coin data, selected coin, usdtKrwRate, loading/error states
 - favoriteSlice: watchlist persisted to localStorage
-- registeredCoinSlice: 등록 코인 목록 persisted to localStorage (기본값: BTC/ETH/XRP/SOL/DOGE)
+- registeredCoinSlice: registered coin list persisted to localStorage (defaults: BTC/ETH/XRP/SOL/DOGE)
 - Store typed with TypeScript (RootState, AppDispatch)
 
 ### Electron Integration
@@ -111,12 +112,14 @@ Core features are implemented and functional. Real-time chart with Lightweight C
 
 ### Recently Completed
 
-- **Lightweight Charts 실시간 차트** ✅ — BinanceFuturesChart (kline REST + WebSocket)
-- **양쪽 거래소 가격 동시 표시** ✅ — ExchangePriceDisplay 재활용
-- **김치프리미엄 계산 및 표시** ✅ — USDT/KRW 환율 기반
-- **USDT/KRW 환율 시스템** ✅ — coinSlice.usdtKrwRate (unifiedCoins와 분리)
-- **탭 전환 상태 유지** ✅ — hidden CSS 패턴
-- **TradingViewChart 삭제** ✅ — Lightweight Charts로 완전 교체
+- **Registered Coins WebSocket Migration** ✅ — Resolved Binance Futures API 429 error
+- **10 Coin Registration Limit** ✅ — Addresses Upbit WebSocket 15-coin limit
+- **Lightweight Charts Real-time Chart** ✅ — BinanceFuturesChart (kline REST + WebSocket)
+- **Dual Exchange Price Display** ✅ — Reused ExchangePriceDisplay
+- **Kimchi Premium Calculation & Display** ✅ — Based on USDT/KRW exchange rate
+- **USDT/KRW Exchange Rate System** ✅ — coinSlice.usdtKrwRate (separated from unifiedCoins)
+- **Tab State Preservation** ✅ — hidden CSS pattern
+- **TradingViewChart Removal** ✅ — Complete replacement with Lightweight Charts
 
 ### Known Limitations
 
@@ -152,16 +155,18 @@ Core features are implemented and functional. Real-time chart with Lightweight C
 - [x] Binance Futures integration (positions, balances)
 - [x] Portfolio with multi-exchange support
 - [x] Memory Bank documentation system
-- [x] Binance Spot → Futures 가격 전환
-- [x] 등록 코인 시스템 (검색 + 등록/해제)
-- [x] **Lightweight Charts 실시간 차트** (kline REST + WebSocket, 인터벌 선택)
-- [x] **양쪽 거래소 가격 + 김치프리미엄**
-- [x] **USDT/KRW 환율 시스템** (별도 Redux 필드)
-- [x] **탭 전환 상태 유지** (hidden 패턴)
+- [x] Binance Spot → Futures price migration
+- [x] Registered coin system (search + register/unregister)
+- [x] **Lightweight Charts real-time chart** (kline REST + WebSocket, interval selection)
+- [x] **Dual exchange prices + kimchi premium**
+- [x] **USDT/KRW exchange rate system** (separate Redux field)
+- [x] **Tab state preservation** (hidden pattern)
+- [x] **Registered coins WebSocket migration** (REST API 429 error resolution)
+- [x] **10 coin registration limit** (Upbit WebSocket 15-coin limit compliance)
 
 ### Upcoming
 
-- [ ] CoinInfo 간소화 (실제 데이터만)
+- [ ] Simplify CoinInfo (actual data only)
 - [ ] Trading order execution
 - [ ] Settings panel and API key management
 - [ ] Comprehensive error handling

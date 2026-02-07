@@ -61,9 +61,10 @@
 │  │  (left      │  │ (hidden pattern:     │  │
 │  │   sidebar)  │  │  both always mounted)│  │
 │  │             │  │                      │  │
-│  │  [검색바]   │  │  Trader: chart+price │  │
-│  │  내코인/    │  │  Assets: portfolio   │  │
-│  │  관심/보유  │  │                      │  │
+│  │  [Search]   │  │  Trader: chart+price │  │
+│  │  My Coins/  │  │  Assets: portfolio   │  │
+│  │  Favorites/ │  │                      │  │
+│  │  Holdings   │  │                      │  │
 │  └─────────────┘  └──────────────────────┘  │
 └──────────────────────────────────────────────┘
 ```
@@ -141,7 +142,7 @@ Tab navigation: hidden CSS pattern (both tabs always mounted, inactive hidden vi
 - **BinanceFuturesChart.tsx:** Lightweight Charts candle chart with kline WebSocket
 
 ### Block Components
-- **MarketBlock.tsx:** Search + registered coin list (내 코인 / 관심 / 보유 tabs)
+- **MarketBlock.tsx:** Search + registered coin list (My Coins / Favorites / Holdings tabs)
 - **CoinDetailBlock.tsx:** Dual-exchange prices + kimchi premium + real-time chart
 - **Block.tsx:** Block type dispatcher
 
@@ -155,8 +156,8 @@ Tab navigation: hidden CSS pattern (both tabs always mounted, inactive hidden vi
 ### Real-time Price Updates
 1. DataManager fetches all markets from both exchanges
 2. Symbol mapping built (Upbit + Binance → unified symbol)
-3. 등록 코인 + USDT REST 폴링 (1초 간격)
-4. 관심 코인은 ticker WebSocket 실시간 업데이트 (REST 스킵)
+3. Registered coins + USDT REST polling (1-second interval)
+4. Favorite coins use ticker WebSocket for real-time updates (REST skipped)
 5. USDT rate extracted separately → `setUsdtKrwRate` dispatch
 6. Redux store updated via `setUnifiedCoins` dispatch
 7. Components re-render with new prices + animations

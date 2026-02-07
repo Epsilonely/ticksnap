@@ -69,6 +69,10 @@ function MarketBlock() {
 
   // 코인 등록 핸들러
   const handleRegister = (coinSymbol: string) => {
+    if (registeredCoins.length >= 10) {
+      alert('최대 10개의 코인만 등록할 수 있습니다.');
+      return;
+    }
     dispatch(registerCoin(coinSymbol));
   };
 

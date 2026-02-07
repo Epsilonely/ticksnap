@@ -474,26 +474,33 @@ export class DataManager {
     this.connectWebSockets();
   }
 
-  // 웹소켓 연결 (관심 코인만)
+  // 웹소켓 연결 (등록 코인 + 관심 코인)
   private connectWebSockets(): void {
     // 기존 웹소켓 연결 해제
     this.disconnectWebSockets();
 
-    if (this.favoriteCoins.length === 0) return;
+    // 등록 코인 + 관심 코인 합치기 (중복 제거)
+    const allCoinsSet = new Set([...this.registeredCoins, ...this.favoriteCoins]);
+    const allCoins = Array.from(allCoinsSet);
 
-    // 관심 코인에 해당하는 심볼들 찾기
+    if (allCoins.length === 0) return;
+
+    // 심볼 매핑
     const upbitSymbols: string[] = [];
     const binanceSymbols: string[] = [];
 
-    this.favoriteCoins.forEach((coinSymbol) => {
+    allCoins.forEach((coinSymbol) => {
       const mapping = this.coinMapping.get(coinSymbol);
       if (mapping?.upbit) upbitSymbols.push(mapping.upbit);
       if (mapping?.binance) binanceSymbols.push(mapping.binance);
     });
 
-    // 업비트 웹소켓 연결
+    // 업비트 웹소켓 연결 (최대 15개 제한 확인)
     if (upbitSymbols.length > 0) {
-      this.connectUpbitWebSocket(upbitSymbols);
+      if (upbitSymbols.length > 15) {
+        console.warn(`⚠️ 업비트 WebSocket 제한: ${upbitSymbols.length}개 요청, 15개만 연결됨`);
+      }
+      this.connectUpbitWebSocket(upbitSymbols.slice(0, 15)); // 15개로 제한
     }
 
     // 바이낸스 웹소켓 연결
@@ -501,7 +508,7 @@ export class DataManager {
       this.connectBinanceWebSocket(binanceSymbols);
     }
 
-    console.log(`웹소켓 연결: 업비트 ${upbitSymbols.length}개, 바이낸스 ${binanceSymbols.length}개`);
+    console.log(`✅ 웹소켓 연결 (등록+관심): 업비트 ${Math.min(upbitSymbols.length, 15)}개, 바이낸스 ${binanceSymbols.length}개`);
   }
 
   // 업비트 웹소켓 연결
