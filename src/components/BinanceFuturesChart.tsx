@@ -257,7 +257,11 @@ export default function BinanceFuturesChart({ symbol, theme = 'light' }: Binance
 
       candlestickSeriesRef.current?.setData(candles);
       volumeSeriesRef.current?.setData(volumes);
-      chartRef.current?.timeScale().fitContent();
+      const totalBars = candles.length;
+      chartRef.current?.timeScale().setVisibleLogicalRange({
+        from: totalBars - 80,
+        to: totalBars + 5,
+      });
 
       setIsLoading(false);
 
