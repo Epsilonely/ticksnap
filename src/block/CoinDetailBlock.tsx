@@ -72,7 +72,9 @@ function CoinDetailBlock() {
     <div className="h-full flex flex-col bg-[#F2F2F2] rounded-md p-4">
       {/* 헤더 - 코인 이름 */}
       <div className="flex-shrink-0 flex justify-between items-center mb-4">
-        <h2 className="text-[24px] font-bold text-[#26262C]">{selectedCoinData.name} {selectedCoinData.coinSymbol}</h2>
+        <h2 className="text-[24px] font-bold text-[#26262C]">
+          {selectedCoinData.name} {selectedCoinData.coinSymbol}
+        </h2>
       </div>
 
       {/* 메인 가격 표시 영역 */}
@@ -98,8 +100,26 @@ function CoinDetailBlock() {
         )}
       </div>
 
-      {/* 차트 - 남은 공간 모두 차지 */}
-      <div className="flex-1 min-h-0 w-full">{selectedCoinData.binance ? <BinanceFuturesChart symbol={`${selectedCoinData.coinSymbol}USDT`} theme="light" position={positionData} /> : <div className="h-full flex items-center justify-center text-[#666666]">바이낸스 차트만 지원됩니다.</div>}</div>
+      {/* 메인 컨텐츠 영역 - 차트 + 사이드 패널 */}
+      <div className="flex-1 min-h-0 flex gap-4">
+        {/* 왼쪽: 차트 영역 */}
+        <div className="flex-1 min-w-0">{selectedCoinData.binance ? <BinanceFuturesChart symbol={`${selectedCoinData.coinSymbol}USDT`} theme="light" position={positionData} /> : <div className="h-full flex items-center justify-center text-[#666666]">바이낸스 차트만 지원됩니다.</div>}</div>
+
+        {/* 오른쪽: 주문 + 포지션 영역 */}
+        <div className="w-[400px] flex-shrink-0 flex flex-col gap-4">
+          {/* 주문 패널 */}
+          <div className="flex-1 min-h-0 bg-white rounded-lg p-4 border border-[#E6E6E6]">
+            <h3 className="text-[16px] font-bold text-[#26262C] mb-2">주문</h3>
+            <div className="text-[14px] text-[#666666]">주문 UI 영역</div>
+          </div>
+
+          {/* 현재 포지션 패널 */}
+          <div className="h-[200px] flex-shrink-0 bg-white rounded-lg p-4 border border-[#E6E6E6]">
+            <h3 className="text-[16px] font-bold text-[#26262C] mb-2">현재 포지션</h3>
+            <div className="text-[14px] text-[#666666]">포지션 상태 표시 영역</div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

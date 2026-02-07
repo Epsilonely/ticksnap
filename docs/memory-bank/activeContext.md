@@ -2,44 +2,70 @@
 
 ## Current Work Focus
 
-Chart UX improvements and feature cleanup. Favorites feature removed entirely — only registered coins remain.
+Trading UI layout preparation and WebSocket optimization. CoinDetailBlock now split into chart + order/position panels.
 
 **Key Decision**: Chart displays Binance Futures data only. Upbit chart not implemented.
 
 ## Recent Changes
 
+### 2026.02.08 — Trading Layout + WebSocket Fix + Position Side BOTH Support ✅
+
+#### Completed Work
+
+- **CoinDetailBlock 3-Section Layout** — Split into chart + order + position sections
+  - Left: Chart area (`flex-1`)
+  - Right top: Order panel (400px width, `flex-1` height) - placeholder
+  - Right bottom: Current position panel (400px width, 200px fixed height) - placeholder
+  - Order and position UI not yet implemented (layout structure only)
+- **Position Side "BOTH" Support** — BinanceFuturesChart
+  - Handle `positionSide` = "BOTH" in One-Way Mode
+  - Determine actual direction from `positionAmt` sign: `> 0` → LONG, `< 0` → SHORT
+  - Chart entry price line color now displays correctly based on actual position direction
+- **429 Error Complete Fix** — DataManager WebSocket activation
+  - Added `connectWebSockets()` call in `initialize()` (was missing)
+  - Modified `updateTickerData()`: Fetch only USDT exchange rate via REST API (1-second interval)
+  - Registered coins now use WebSocket for real-time updates (no REST API calls)
+  - Added WebSocket reconnection in `refreshRegisteredCoinData()` (on coin register/unregister)
+  - **Result**: Binance Futures API 429 error completely resolved ✅
+
+#### Technical Decisions
+
+- **CoinDetailBlock Layout**: Flexbox 3-section (chart + order + position)
+- **Position Side Logic**: "BOTH" → check positionAmt sign (One-Way Mode support)
+- **WebSocket Priority**: REST API for USDT rate only, registered coins use WebSocket exclusively
+
 ### 2026.02.07 (Evening) — Chart UX Improvements + Favorites Removal + Position Display ✅
 
 #### Completed Work
 
-- **Chart Initial Zoom Level** — `fitContent()` → `setVisibleLogicalRange()` (최근 50개 캔들)
-  - 500개 캔들 전체를 보여주던 줌아웃 문제 해결
-  - `rightOffset: 7` 추가로 마지막 캔들 오른쪽 여유 공간 확보
-- **Chart High/Low Price Markers** — 보이는 범위의 최고/최저가 동적 표시
-  - `createSeriesMarkers()` 플러그인으로 화살표 마커 (텍스트 없음)
-  - `createPriceLine()` 으로 y축에 가격 표시 (점선, 항상 보임)
-  - `subscribeVisibleLogicalRangeChange`로 줌/스크롤 시 동적 업데이트
-  - 과거 데이터 무한 스크롤과 공존 (같은 핸들러에서 처리)
-- **Favorites Feature Complete Removal** — 관심 코인 기능 전체 삭제
+- **Chart Initial Zoom Level** — `fitContent()` → `setVisibleLogicalRange()` (recent 50 candles)
+  - Fixed zoom-out issue showing all 500 candles
+  - Added `rightOffset: 7` for breathing room on right edge
+- **Chart High/Low Price Markers** — Dynamic display of highest/lowest prices in visible range
+  - Arrow markers via `createSeriesMarkers()` plugin (no text)
+  - Price display on y-axis via `createPriceLine()` (dashed line, always visible)
+  - Dynamic updates on `subscribeVisibleLogicalRangeChange` (zoom/scroll)
+  - Coexists with infinite scroll past data loading (same handler)
+- **Favorites Feature Complete Removal** — Completely deleted favorites feature
   - Deleted: `src/store/slices/favoriteSlice.ts`
-  - `store/index.ts`: favoriteReducer 제거
-  - `App.tsx`: localStorage favorites 복원 로직 제거
-  - `MarketBlock.tsx`: "관심" 탭, favorites selector, DataManager 동기화 useEffect, isFavorite 스타일링 제거
-  - `CoinDetailBlock.tsx`: "관심 등록/해제" 버튼, toggleFavorite 핸들러, dispatch 제거
-  - `DataManager.ts`: `favoriteCoins` 프로퍼티, `updateFavoriteCoins()`, favorites WebSocket/REST 로직 제거
-- **Futures Position Display on Chart** — 현재 포지션 진입가 차트 표시
-  - `coinSlice`: `futuresPositions` state 추가 (BinanceFuturesPosition[])
-  - `CoinDetailBlock`: 30초마다 포지션 REST API 호출, 선택된 코인과 매칭
-  - `BinanceFuturesChart`: `position` prop 추가, 진입가 price line 표시
-  - LONG: 파란색 (#2196F3), SHORT: 주황색 (#FF9800), 실선
-  - y축 라벨: "Entry: $XX,XXX.XX" 형식으로 진입가 표시
+  - `store/index.ts`: removed favoriteReducer
+  - `App.tsx`: removed localStorage favorites restoration logic
+  - `MarketBlock.tsx`: removed "Favorites" tab, favorites selector, DataManager sync useEffect, isFavorite styling
+  - `CoinDetailBlock.tsx`: removed "Add/Remove Favorite" button, toggleFavorite handler, dispatch
+  - `DataManager.ts`: removed `favoriteCoins` property, `updateFavoriteCoins()`, favorites WebSocket/REST logic
+- **Futures Position Display on Chart** — Show current position entry price on chart
+  - `coinSlice`: added `futuresPositions` state (BinanceFuturesPosition[])
+  - `CoinDetailBlock`: fetch positions via REST API every 30s, match with selected coin
+  - `BinanceFuturesChart`: added `position` prop, display entry price line
+  - LONG: Blue (#2196F3), SHORT: Orange (#FF9800), solid line
+  - Y-axis label: "Entry: $XX,XXX.XX" format showing entry price
 
 #### Technical Decisions
 
-- **lightweight-charts v4+ markers**: `series.setMarkers()` 제거됨 → `createSeriesMarkers()` 플러그인 방식 사용
-- **Price line for labels**: 마커 텍스트가 차트 끝에서 잘리는 문제 → price line의 y축 라벨로 대체
-- **Favorites 제거**: 등록 코인 시스템이 favorites를 대체, WebSocket 연결은 등록 코인만 사용
-- **Position price line**: 실선 (high/low는 점선)으로 구분, 포지션 없으면 자동 제거
+- **lightweight-charts v4+ markers**: `series.setMarkers()` removed → use `createSeriesMarkers()` plugin
+- **Price line for labels**: Marker text clips at chart edges → use price line's y-axis label instead
+- **Favorites removal**: Registered coin system replaces favorites, WebSocket connections only for registered coins
+- **Position price line**: Solid line (high/low use dashed) for distinction, auto-removed when no position
 
 ### 2026.02.07 (PM) — Registered Coins WebSocket Migration + 10 Coin Limit ✅
 
@@ -121,9 +147,9 @@ Left sidebar: MarketBlock
 
 ## Next Steps
 
-1. Simplify CoinInfo (remove fake buy/sell data, show only actual volume)
-2. Improve Trading stub
-3. Implement actual order functionality
+1. **Implement Order Panel** — Order UI (Market/Limit, Long/Short, quantity/price input)
+2. **Implement Position Panel** — Display current position details (entry price, quantity, P&L, liquidation price, etc.)
+3. Implement actual order execution (Binance Futures API)
 4. Strengthen error handling and user feedback
 5. Settings panel and API key management
 
@@ -176,11 +202,13 @@ Left sidebar: MarketBlock
 - DataManager singleton is the core of ticker data flow — ~670 lines
 - Chart kline WebSocket is managed separately from DataManager (different concern)
 - lightweight-charts v4+ uses `addSeries(CandlestickSeries)` not `addCandlestickSeries()`
-- lightweight-charts v4+: `series.setMarkers()` 제거됨 → `createSeriesMarkers()` 플러그인 방식 사용
-- lightweight-charts markers 텍스트는 차트 끝에서 잘림 → price line y축 라벨로 대체
+- lightweight-charts v4+: `series.setMarkers()` removed → use `createSeriesMarkers()` plugin
+- lightweight-charts markers text clips at chart edges → use price line y-axis label instead
 - USDT must be fetched separately as exchange rate, NOT put in unifiedCoins (causes flickering in MarketBlock)
 - Tab content should use hidden CSS pattern instead of conditional rendering to preserve component state
 - Binance Futures kline WebSocket: `wss://fstream.binance.com/ws/{symbol}@kline_{interval}`
+- **Binance Futures Position Mode**: "BOTH" (One-Way) vs "LONG"/"SHORT" (Hedge) — must determine direction from positionAmt sign
+- **WebSocket must be initialized**: Missing `connectWebSockets()` call causes only REST API usage leading to 429 error
 
 ### Challenges to Watch
 

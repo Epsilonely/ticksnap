@@ -96,16 +96,16 @@ Safelisted classes: `text-price-rise`, `text-price-fall`, `text-price-unchanged`
 
 ## Memory Bank
 
-작업 시작 시 `docs/memory-bank/` 디렉토리의 모든 파일을 읽어 프로젝트 컨텍스트를 파악할 것:
+Read all files in `docs/memory-bank/` directory at session start to understand project context:
 
-- `projectbrief.md` - 프로젝트 기반 및 요구사항
-- `productContext.md` - 프로젝트 존재 이유 및 UX 목표
-- `activeContext.md` - 현재 작업 초점 및 최근 변경사항
-- `systemPatterns.md` - 아키텍처 및 디자인 패턴
-- `techContext.md` - 기술 스택 및 개발 환경
-- `progress.md` - 현재 진행 상태 및 남은 작업
+- `projectbrief.md` - Project foundation and requirements
+- `productContext.md` - Project purpose and UX goals
+- `activeContext.md` - Current work focus and recent changes
+- `systemPatterns.md` - Architecture and design patterns
+- `techContext.md` - Tech stack and development environment
+- `progress.md` - Current progress and remaining work
 
-"update memory bank" 요청 시 위 파일들을 모두 검토하고 업데이트할 것.
+When user requests "update memory bank", review and update all above files.
 
 ## Conventions
 
@@ -113,3 +113,10 @@ Safelisted classes: `text-price-rise`, `text-price-fall`, `text-price-unchanged`
 - Vite root is `./src` (not project root); build output goes to `../dist`
 - ESM throughout (`"type": "module"` in package.json)
 - Korean comments are common in the codebase
+
+## Documentation Language
+
+- **All files under `docs/` directory MUST be written in English**
+- **Memory bank files (`docs/memory-bank/*.md`) MUST be written in English**
+- Code comments can be in Korean (common in this codebase)
+- UI text and user-facing content can be in Korean

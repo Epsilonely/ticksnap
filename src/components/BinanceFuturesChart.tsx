@@ -397,11 +397,20 @@ export default function BinanceFuturesChart({ symbol, theme = 'light', position 
     // 포지션이 없으면 종료
     if (!position) return;
 
-    const { entryPrice, positionSide } = position;
+    const { entryPrice, positionAmt, positionSide } = position;
+
+    // 실제 포지션 방향 판단
+    // positionSide가 'BOTH'인 경우 (단방향 모드) positionAmt의 부호로 판단
+    let actualDirection: 'LONG' | 'SHORT';
+    if (positionSide === 'BOTH') {
+      actualDirection = positionAmt > 0 ? 'LONG' : 'SHORT';
+    } else {
+      actualDirection = positionSide as 'LONG' | 'SHORT';
+    }
 
     // Long: 파란색, Short: 주황색
-    const color = positionSide === 'SHORT' ? '#FF9800' : '#2196F3';
-    const label = `Entry: $${entryPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const color = actualDirection === 'SHORT' ? '#FF9800' : '#2196F3';
+    const label = `${actualDirection}`;
 
     positionPriceLineRef.current = series.createPriceLine({
       price: entryPrice,

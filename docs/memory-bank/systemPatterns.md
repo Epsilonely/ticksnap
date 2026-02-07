@@ -128,9 +128,10 @@ Tab navigation: hidden CSS pattern (both tabs always mounted, inactive hidden vi
 - App.tsx store subscription syncs changes to DataManager
 
 ### Bandwidth Optimization Pattern
-- Ticker WebSocket for registered coins (`@ticker` stream)
-- Kline WebSocket for selected coin only (`@kline_{interval}` stream)
-- REST polling for USDT exchange rate only (1-second interval)
+- **Ticker WebSocket** for registered coins (`@ticker` stream) — real-time price updates
+- **Kline WebSocket** for selected coin only (`@kline_{interval}` stream) — chart data
+- **REST polling** for USDT exchange rate only (1-second interval) — no registered coin polling
+- **Critical**: `connectWebSockets()` must be called in `initialize()` to establish ticker WebSocket connections
 
 ### Chart High/Low Markers Pattern (BinanceFuturesChart)
 - `createSeriesMarkers()` plugin for arrow markers (no text — avoids clipping at chart edges)
@@ -144,9 +145,12 @@ Tab navigation: hidden CSS pattern (both tabs always mounted, inactive hidden vi
 - CoinDetailBlock filters positions by current symbol (`{coinSymbol}USDT`)
 - Passes position data to BinanceFuturesChart as prop
 - Chart creates price line at entry price when position exists
+- **Position Side Handling**:
+  - "BOTH" (One-Way Mode): Determine direction from `positionAmt` sign (+ = LONG, - = SHORT)
+  - "LONG"/"SHORT" (Hedge Mode): Use `positionSide` directly
 - Color coding: Blue (#2196F3) for LONG, Orange (#FF9800) for SHORT
 - Solid line style (distinguishes from high/low dashed lines)
-- Y-axis label shows entry price: "Entry: $XX,XXX.XX"
+- Y-axis label shows direction: "LONG" or "SHORT"
 - Price line automatically removed when position is closed or coin changes
 
 ## Component Relationships
@@ -158,7 +162,10 @@ Tab navigation: hidden CSS pattern (both tabs always mounted, inactive hidden vi
 
 ### Block Components
 - **MarketBlock.tsx:** Search + registered coin list (My Coins / Holdings tabs)
-- **CoinDetailBlock.tsx:** Dual-exchange prices + kimchi premium + real-time chart
+- **CoinDetailBlock.tsx:** 3-section layout (chart + order panel + position panel)
+  - Left: BinanceFuturesChart (flex-1)
+  - Right top: Order panel (400px width, flex-1 height) - placeholder
+  - Right bottom: Position panel (400px width, 200px height) - placeholder
 - **Block.tsx:** Block type dispatcher
 
 ### Common Components

@@ -80,7 +80,7 @@ export class DataManager {
     }
   }
 
-  // 등록 코인 변경 시 즉시 데이터 갱신
+  // 등록 코인 변경 시 즉시 데이터 갱신 + WebSocket 재연결
   private async refreshRegisteredCoinData(): Promise<void> {
     try {
       const { upbitSymbols, binanceSymbols } = this.getRegisteredExchangeSymbols();
@@ -90,6 +90,9 @@ export class DataManager {
 
       this.createUnifiedData(upbitTickers, binanceTickers);
       this.updateReduxStore();
+
+      // WebSocket 재연결 (등록 코인 목록이 변경되었으므로)
+      this.connectWebSockets();
     } catch (error) {
       console.error('등록 코인 데이터 갱신 실패:', error);
     }
@@ -147,7 +150,10 @@ export class DataManager {
       // 2. 초기 현재가 데이터 로드
       await this.loadInitialTickers();
 
-      // 3. REST API 주기적 업데이트 시작
+      // 3. WebSocket 연결 시작 (등록 코인 실시간 업데이트)
+      this.connectWebSockets();
+
+      // 4. REST API 주기적 업데이트 시작 (USDT 환율만)
       this.startRestApiUpdates();
 
       this.isInitialized = true;
@@ -319,25 +325,23 @@ export class DataManager {
       }
     }, 1000); // 1000ms = 1초에 1번 (API 제한 고려)
 
-    console.log('REST API 주기적 업데이트 시작 (1초 간격)');
+    console.log('REST API 주기적 업데이트 시작 (USDT 환율만, 1초 간격)');
   }
 
-  // 현재가 데이터 업데이트 (등록 코인만)
+  // 현재가 데이터 업데이트 (USDT 환율만 - 등록 코인은 WebSocket으로 처리)
   private async updateTickerData(): Promise<void> {
     try {
-      const { upbitSymbols, binanceSymbols } = this.getRegisteredExchangeSymbols();
+      // USDT 환율용 KRW-USDT만 가져오기
+      const usdtMapping = this.coinMapping.get('USDT');
+      if (usdtMapping?.upbit) {
+        const upbitTickers = await fetchUpbitTickers([usdtMapping.upbit]);
+        // USDT 환율 추출 및 Redux 업데이트
+        this.extractUsdtRate(upbitTickers);
+      }
 
-      const upbitTickers = upbitSymbols.length > 0 ? await fetchUpbitTickers(upbitSymbols) : [];
-      const binanceTickersRaw = binanceSymbols.length > 0 ? await fetchBinanceTickers(binanceSymbols) : [];
-      const binanceTickers = binanceTickersRaw.map(convertBinanceTickerToUpbitFormat);
-
-      // 기존 데이터 업데이트
-      this.updateUnifiedData(upbitTickers, binanceTickers);
-
-      // Redux store 업데이트
-      this.updateReduxStore();
+      // 등록 코인 데이터는 WebSocket에서 실시간 업데이트되므로 REST API 호출 안 함
     } catch (error) {
-      console.error('현재가 데이터 업데이트 실패:', error);
+      console.error('USDT 환율 업데이트 실패:', error);
     }
   }
 

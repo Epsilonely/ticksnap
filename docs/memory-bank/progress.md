@@ -107,26 +107,29 @@
 
 **Phase:** Active Development — Feature Building
 **Version:** 0.1.0
-**Last Updated:** 2026.02.07
+**Last Updated:** 2026.02.08
 
 ### Summary
 
-Core features are implemented and functional. Real-time chart with Lightweight Charts, dual-exchange price display with kimchi premium, and portfolio with P&L are working. Tab switching preserves component state. The main gap is the Trading component and production-readiness improvements.
+Core features are implemented and functional. Real-time chart with Lightweight Charts, dual-exchange price display with kimchi premium, and portfolio with P&L are working. Tab switching preserves component state. WebSocket connections now working properly (429 error resolved). Trading UI layout prepared but not yet implemented.
 
 ### Recently Completed
 
-- **Registered Coins WebSocket Migration** ✅ — Resolved Binance Futures API 429 error
-- **10 Coin Registration Limit** ✅ — Addresses Upbit WebSocket 15-coin limit
-- **Lightweight Charts Real-time Chart** ✅ — BinanceFuturesChart (kline REST + WebSocket)
-- **Dual Exchange Price Display** ✅ — Reused ExchangePriceDisplay
-- **Kimchi Premium Calculation & Display** ✅ — Based on USDT/KRW exchange rate
-- **USDT/KRW Exchange Rate System** ✅ — coinSlice.usdtKrwRate (separated from unifiedCoins)
-- **Tab State Preservation** ✅ — hidden CSS pattern
-- **TradingViewChart Removal** ✅ — Complete replacement with Lightweight Charts
-- **Chart Initial Zoom** ✅ — `setVisibleLogicalRange()` 최근 50개 캔들 표시
-- **Chart High/Low Markers** ✅ — 화살표 마커 + price line y축 가격 (동적 업데이트)
-- **Favorites Feature Removal** ✅ — favoriteSlice 삭제, 관련 UI/로직 전체 제거
-- **Position Entry Price Display** ✅ — 차트에 현재 포지션 진입가 표시 (Blue: LONG, Orange: SHORT)
+- **CoinDetailBlock 3-Section Layout** ✅ (2026.02.08) — Split into chart + order panel + position panel sections
+- **Position Side "BOTH" Support** ✅ (2026.02.08) — One-Way Mode support (determine direction from positionAmt sign)
+- **429 Error Complete Fix** ✅ (2026.02.08) — WebSocket activation, REST API for USDT rate only
+- **Registered Coins WebSocket Migration** ✅ (2026.02.07) — Resolved Binance Futures API 429 error
+- **10 Coin Registration Limit** ✅ (2026.02.07) — Addresses Upbit WebSocket 15-coin limit
+- **Lightweight Charts Real-time Chart** ✅ (2026.02.07) — BinanceFuturesChart (kline REST + WebSocket)
+- **Dual Exchange Price Display** ✅ (2026.02.07) — Reused ExchangePriceDisplay
+- **Kimchi Premium Calculation & Display** ✅ (2026.02.07) — Based on USDT/KRW exchange rate
+- **USDT/KRW Exchange Rate System** ✅ (2026.02.07) — coinSlice.usdtKrwRate (separated from unifiedCoins)
+- **Tab State Preservation** ✅ (2026.02.07) — hidden CSS pattern
+- **TradingViewChart Removal** ✅ (2026.02.07) — Complete replacement with Lightweight Charts
+- **Chart Initial Zoom** ✅ (2026.02.07) — `setVisibleLogicalRange()` show recent 50 candles
+- **Chart High/Low Markers** ✅ (2026.02.07) — Arrow markers + price line y-axis labels (dynamic updates)
+- **Favorites Feature Removal** ✅ (2026.02.07) — Deleted favoriteSlice and all related UI/logic
+- **Position Entry Price Display** ✅ (2026.02.07) — Show current position entry price on chart (Blue: LONG, Orange: SHORT)
 
 ### Known Limitations
 
