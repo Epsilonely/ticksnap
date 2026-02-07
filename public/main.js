@@ -1,4 +1,4 @@
-const { app, BrowserWindow, BrowserView, ipcMain } = await import('electron');
+const { app, BrowserWindow, ipcMain } = await import('electron');
 const path = await import('path');
 const { fileURLToPath } = await import('url');
 const isDev = await import('electron-is-dev');
@@ -182,9 +182,6 @@ class UpbitPrivateWebSocket {
 
 // 전역 프라이빗 웹소켓 인스턴스
 let privateWebSocket = null;
-
-// 바이낸스 로그인 상태
-let loginCookies = [];
 
 // IPC 핸들러들
 ipcMain.handle('private-websocket-connect', async (event, { accessKey, secretKey }) => {
